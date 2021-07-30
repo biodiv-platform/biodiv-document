@@ -1098,7 +1098,7 @@ public class DocumentServiceImpl implements DocumentService {
 		try {
 			loggingData.setMailData(generateMailData(loggingData.getRootHolderId()));
 			activityService = headers.addActivityHeaders(activityService, request.getHeader(HttpHeaders.AUTHORIZATION));
-			Activity result = activityService.addComment("observation", loggingData);
+			Activity result = activityService.addComment("document", loggingData);
 			updateDocumentLastRevised(loggingData.getRootHolderId());
 			return result;
 		} catch (Exception e) {
