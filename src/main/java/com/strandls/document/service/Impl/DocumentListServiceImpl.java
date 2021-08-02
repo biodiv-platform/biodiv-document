@@ -78,10 +78,10 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 	private void getAggregateLatch(String index, String type, String filter, String geoAggregationField,
 			MapSearchQuery searchQuery, Map<String, AggregationResponse> mapResponse, CountDownLatch latch,
-			String namedAgg) {
+			String geoShapeFilterField,String namedAgg) {
 
 		LatchThreadWorker worker = new LatchThreadWorker(index, type, filter, geoAggregationField, searchQuery,
-				mapResponse, namedAgg, latch, esService);
+				mapResponse, namedAgg, latch, geoShapeFilterField,esService);
 		worker.start();
 
 	}
@@ -91,7 +91,7 @@ public class DocumentListServiceImpl implements DocumentListService {
 			String user, String flags, String createdOnMaxDate, String createdOnMinDate, String featured,
 			String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate, String state,
 			String itemType, String year, String author, String publisher, String title,
-			MapSearchParams mapSearchParams) {
+			String geoShapeFilterField,MapSearchParams mapSearchParams) {
 
 		MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,
 				createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
@@ -119,11 +119,11 @@ public class DocumentListServiceImpl implements DocumentListService {
 					itemType, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, DocumentIndex.SGROUP.getValue(), null, mapSearchQueryFilter, mapAggResponse,
-					latch, null);
+					latch, geoShapeFilterField,null);
 
 		} else {
 			getAggregateLatch(index, type, DocumentIndex.SGROUP.getValue(), null, mapSearchQuery, mapAggResponse, latch,
-					null);
+					geoShapeFilterField,null);
 		}
 
 		if (state != null && !state.isEmpty()) {
@@ -133,11 +133,11 @@ public class DocumentListServiceImpl implements DocumentListService {
 					itemType, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, DocumentIndex.STATE.getValue(), null, mapSearchQueryFilter, mapAggResponse,
-					latch, null);
+					latch, geoShapeFilterField,null);
 
 		} else {
 			getAggregateLatch(index, type, DocumentIndex.STATE.getValue(), null, mapSearchQuery, mapAggResponse, latch,
-					null);
+					geoShapeFilterField,null);
 		}
 
 		if (itemType != null && !itemType.isEmpty()) {
@@ -147,10 +147,10 @@ public class DocumentListServiceImpl implements DocumentListService {
 					omiter, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, "document.itemtype.raw", null, mapSearchQueryFilter, mapAggResponse, latch,
-					null);
+					geoShapeFilterField,null);
 
 		} else {
-			getAggregateLatch(index, type, "document.itemtype.raw", null, mapSearchQuery, mapAggResponse, latch, null);
+			getAggregateLatch(index, type, "document.itemtype.raw", null, mapSearchQuery, mapAggResponse, latch, geoShapeFilterField,null);
 		}
 
 		if (year != null && !year.isEmpty()) {
@@ -160,10 +160,10 @@ public class DocumentListServiceImpl implements DocumentListService {
 					itemType, omiter, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, "document.year.keyword", null, mapSearchQueryFilter, mapAggResponse, latch,
-					null);
+					geoShapeFilterField,null);
 
 		} else {
-			getAggregateLatch(index, type, "document.year.keyword", null, mapSearchQuery, mapAggResponse, latch, null);
+			getAggregateLatch(index, type, "document.year.keyword", null, mapSearchQuery, mapAggResponse, latch,geoShapeFilterField,null);
 		}
 
 		try {
