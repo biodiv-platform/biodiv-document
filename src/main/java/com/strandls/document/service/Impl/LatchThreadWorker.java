@@ -65,7 +65,7 @@ public class LatchThreadWorker extends Thread {
 	public void run() {
 		try {
 			AggregationResponse response = esService.getAggregation(index, type, filter, geoAggregationField,
-					searchQuery);
+					null,searchQuery);
 			if (namedAgg != null && !namedAgg.isEmpty())
 				mapResponse.put(namedAgg, response);
 			else
