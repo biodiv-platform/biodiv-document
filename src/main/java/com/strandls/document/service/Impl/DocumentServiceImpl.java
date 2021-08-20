@@ -1442,8 +1442,9 @@ public class DocumentServiceImpl implements DocumentService {
 				downloadLogData.getFilterUrl(), null, null, downloadLogData.getStatus().toLowerCase(),
 				downloadLogData.getFileType().toUpperCase(), "Document", 0L);
 
+		String filePath = downloadLog.getFilePath() != null ? downloadLog.getFilePath().replace("/biodiv/", "/") : "";
 		com.strandls.user.pojo.DownloadLogData data = new com.strandls.user.pojo.DownloadLogData();
-		data.setFilePath(downloadLog.getFilePath());
+		data.setFilePath(filePath);
 		data.setFileType(downloadLog.getType());
 		data.setFilterUrl(downloadLog.getFilterUrl());
 		data.setStatus(downloadLog.getStatus());
