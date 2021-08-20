@@ -1442,9 +1442,21 @@ public class DocumentServiceImpl implements DocumentService {
 				downloadLogData.getFilterUrl(), null, null, downloadLogData.getStatus().toLowerCase(),
 				downloadLogData.getFileType().toUpperCase(), "Document", 0L);
 
-		downloadLog = downloadLogDao.save(downloadLog);
-		if (downloadLog.getId() != null)
-			return true;
+		com.strandls.user.pojo.DownloadLogData data = new com.strandls.user.pojo.DownloadLogData();
+		data.setFilePath(downloadLog.getFilePath());
+		data.setFileType(downloadLog.getType());
+		data.setFilterUrl(downloadLog.getFilterUrl());
+		data.setStatus(downloadLog.getStatus());
+		data.setSourcetype("Document");
+		userService = headers.addUserHeaders(userService, request.getHeader(HttpHeaders.AUTHORIZATION));
+
+		try {
+			if (userService.logDocumentDownload(data) != null)
+				return true;
+		} catch (com.strandls.user.ApiException e) {
+			return false;
+		}
+
 		return false;
 	}
 
