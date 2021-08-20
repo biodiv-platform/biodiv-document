@@ -15,6 +15,6 @@ public interface DocumentListService {
 			String user, String flags, String createdOnMaxDate, String createdOnMinDate, String featured,
 			String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate, String state,
 			String itemType, String year, String author, String publisher, String title,
-			MapSearchParams mapSearchParams);
+			String geoShapeFilterField,MapSearchParams mapSearchParams);
 
 }

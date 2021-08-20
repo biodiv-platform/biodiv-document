@@ -753,7 +753,7 @@ public class DocumentController {
 			if (offset == 0) {
 				aggregationResult = docListService.mapAggregate(index, type, sGroup, habitatIds, tags, user, flags,
 						createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-						revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
+						revisedOnMinDate, state, itemType, year, author, publisher, title, geoShapeFilterField,mapSearchParams);
 			}
 
 			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,
