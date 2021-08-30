@@ -16,6 +16,7 @@ public class DownloadLogData {
 	private String filterUrl;
 	private String status;
 	private String fileType;
+	private String notes;
 
 	/**
 	 * 
@@ -30,12 +31,13 @@ public class DownloadLogData {
 	 * @param status
 	 * @param fileType
 	 */
-	public DownloadLogData(String filePath, String filterUrl, String status, String fileType) {
+	public DownloadLogData(String filePath, String filterUrl, String status, String fileType, String notes) {
 		super();
 		this.filePath = filePath;
 		this.filterUrl = filterUrl;
 		this.status = status;
 		this.fileType = fileType;
+		this.notes = notes;
 	}
 
 	public String getFilePath() {
@@ -68,6 +70,14 @@ public class DownloadLogData {
 
 	public void setFileType(String fileType) {
 		this.fileType = fileType;
+	}
+
+	public String getNotes() {
+		return notes;
+	}
+
+	public void setNotes(String notes) {
+		this.notes = notes;
 	}
 
 }
