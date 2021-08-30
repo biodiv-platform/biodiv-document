@@ -1449,6 +1449,7 @@ public class DocumentServiceImpl implements DocumentService {
 		data.setFilterUrl(downloadLog.getFilterUrl());
 		data.setStatus(downloadLog.getStatus());
 		data.setSourcetype("Document");
+		data.setNotes(downloadLogData.getNotes());
 		userService = headers.addUserHeaders(userService, request.getHeader(HttpHeaders.AUTHORIZATION));
 
 		try {
