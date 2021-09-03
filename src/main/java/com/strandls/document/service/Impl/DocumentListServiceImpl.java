@@ -107,7 +107,7 @@ public class DocumentListServiceImpl implements DocumentListService {
 //		filter panel data
 
 //      number refers to total field to aggregate
-		int totalLatch = 4;
+		int totalLatch = 5;
 
 //		latch count down
 		CountDownLatch latch = new CountDownLatch(totalLatch);
@@ -152,6 +152,19 @@ public class DocumentListServiceImpl implements DocumentListService {
 		} else {
 			getAggregateLatch(index, type, "document.itemtype.raw", null, mapSearchQuery, mapAggResponse, latch, geoShapeFilterField,null);
 		}
+		
+		if (userGroupList != null && !userGroupList.isEmpty()) {
+
+			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags, createdOnMaxDate,
+					createdOnMinDate, featured, omiter, isFlagged, revisedOnMaxDate, revisedOnMinDate, state,
+					omiter, year, author, publisher, title, mapSearchParams);
+
+			getAggregateLatch(index, type, DocumentIndex.USERGROUPID.getValue(), null, mapSearchQueryFilter, mapAggResponse, latch,
+					geoShapeFilterField,null);
+
+		} else {
+			getAggregateLatch(index, type, DocumentIndex.USERGROUPID.getValue(), null, mapSearchQuery, mapAggResponse, latch, geoShapeFilterField,null);
+		}
 
 		if (year != null && !year.isEmpty()) {
 
@@ -177,6 +190,9 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 		aggregationResponse.setGroupState(mapAggResponse.get(DocumentIndex.STATE.getValue()).getGroupAggregation());
 
+		
+		aggregationResponse.setGroupUserGroupName(mapAggResponse.get(DocumentIndex.USERGROUPID.getValue()).getGroupAggregation());
+		
 		aggregationResponse.setGroupTypeOfDocument(mapAggResponse.get("document.itemtype.raw").getGroupAggregation());
 
 		aggregationResponse

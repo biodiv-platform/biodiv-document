@@ -8,6 +8,7 @@ public class MapAggregationResponse {
 	private Map<String, Long> groupState;
 	private Map<String, Long> groupYearofPublication;
 	private Map<String, Long> groupTypeOfDocument;
+	private Map<String,Long>  groupUserGroupName;
 
 	public Map<String, Long> getGroupSpeciesName() {
 		return groupSpeciesName;
@@ -39,6 +40,14 @@ public class MapAggregationResponse {
 
 	public void setGroupTypeOfDocument(Map<String, Long> groupTypeOfDocument) {
 		this.groupTypeOfDocument = groupTypeOfDocument;
+	}
+
+	public Map<String,Long> getGroupUserGroupName() {
+		return groupUserGroupName;
+	}
+
+	public void setGroupUserGroupName(Map<String,Long> groupUserGroupName) {
+		this.groupUserGroupName = groupUserGroupName;
 	}
 
 
