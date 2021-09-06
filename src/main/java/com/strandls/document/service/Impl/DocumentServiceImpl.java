@@ -241,8 +241,10 @@ public class DocumentServiceImpl implements DocumentService {
 				List<Featured> featured = ugService.getAllFeatured("content.eml.Document", documentId.toString());
 
 				UFile resource = null;
-				if (document.getuFileId() != null)
+				if (document.getuFileId() != null) {
 					resource = resourceService.getUFilePath(document.getuFileId().toString());
+					resource.setPath(resource.getPath().replace("/documents", ""));
+				}
 
 				License documentLicense = resourceService.getLicenseResource(document.getLicenseId().toString());
 
