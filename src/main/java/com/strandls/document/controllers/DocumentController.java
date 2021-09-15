@@ -31,10 +31,12 @@ import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.document.ApiConstants;
+import com.strandls.document.dao.DocSciNameDao;
 import com.strandls.document.es.util.ESUtility;
 import com.strandls.document.pojo.BibFieldsData;
 import com.strandls.document.pojo.BibTexItemType;
 import com.strandls.document.pojo.BulkUploadExcelData;
+import com.strandls.document.pojo.DocSciName;
 import com.strandls.document.pojo.DocumentCreateData;
 import com.strandls.document.pojo.DocumentEditData;
 import com.strandls.document.pojo.DocumentListData;
@@ -42,6 +44,7 @@ import com.strandls.document.pojo.DocumentListParams;
 import com.strandls.document.pojo.DocumentMeta;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
+import com.strandls.document.pojo.GNFinderResponseMap;
 import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentListService;
@@ -94,6 +97,36 @@ public class DocumentController {
 
 	public Response getPong() {
 		return Response.status(Status.OK).entity("PONG").build();
+	}
+
+	@GET
+	@Path(ApiConstants.GNRD)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	public Response parsePdfWithGNFinder(@QueryParam("filePath") String filePath, @QueryParam("fileUrl") String fileUrl,
+			@QueryParam("documentId") Long documentId) {
+		GNFinderResponseMap response = docService.parsePdfWithGNFinder(filePath, fileUrl, documentId);
+		return Response.status(Status.OK).entity(response).build();
+	}
+
+	@GET
+	@Path(ApiConstants.NAMES + "/{documentId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "fetch the scientific names in pdf documents", notes = "returns the scientific names detected by gnfinder", response = DocSciName[].class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
+
+	public Response findNamesInDocument(@PathParam("documentId") Long documentId, @QueryParam("offset") int offset) {
+
+		try {
+			List<DocSciName> response = docService.getNamesByDocumentId(documentId, offset);
+			return Response.status(Status.OK).entity(response).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+
 	}
 
 	@GET
@@ -753,7 +786,8 @@ public class DocumentController {
 			if (offset == 0) {
 				aggregationResult = docListService.mapAggregate(index, type, sGroup, habitatIds, tags, user, flags,
 						createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-						revisedOnMinDate, state, itemType, year, author, publisher, title, geoShapeFilterField,mapSearchParams);
+						revisedOnMinDate, state, itemType, year, author, publisher, title, geoShapeFilterField,
+						mapSearchParams);
 			}
 
 			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,

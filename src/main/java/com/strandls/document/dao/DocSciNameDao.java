@@ -65,4 +65,22 @@ public class DocSciNameDao extends AbstractDAO<DocSciName, Long> {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
+	public List<DocSciName> findByDocId(Long documentId) {
+		String qry = "from DocSciName where documentId = :documentId and isDeleted = false order by frequency desc";
+		Session session = sessionFactory.openSession();
+		List<DocSciName> result = null;
+		try {
+			Query<DocSciName> query = session.createQuery(qry);
+			query.setParameter("documentId", documentId);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
 }

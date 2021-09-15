@@ -3,9 +3,14 @@
  */
 package com.strandls.document.service.Impl;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +20,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -22,6 +28,14 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -77,8 +91,12 @@ import com.strandls.document.pojo.DocumentSpeciesGroup;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLog;
 import com.strandls.document.pojo.DownloadLogData;
+import com.strandls.document.pojo.GNFinderResponseMap;
+import com.strandls.document.pojo.GnFinderResponseNames;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentService;
+import com.strandls.document.util.MicroServicesUtils;
+import com.strandls.document.util.PropertyFileUtil;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
@@ -113,6 +131,7 @@ import com.strandls.utility.pojo.FlagIbp;
 import com.strandls.utility.pojo.FlagShow;
 import com.strandls.utility.pojo.Habitat;
 import com.strandls.utility.pojo.Language;
+import com.strandls.utility.pojo.ParsedName;
 import com.strandls.utility.pojo.Tags;
 import com.strandls.utility.pojo.TagsMapping;
 import com.strandls.utility.pojo.TagsMappingData;
@@ -132,7 +151,7 @@ import net.minidev.json.JSONArray;
 public class DocumentServiceImpl implements DocumentService {
 
 	private final Logger logger = LoggerFactory.getLogger(DocumentServiceImpl.class);
-
+	private final CloseableHttpClient httpClient = HttpClients.createDefault();
 	@Inject
 	private DocumentDao documentDao;
 
@@ -381,7 +400,8 @@ public class DocumentServiceImpl implements DocumentService {
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 			objectMapper.setDateFormat(df);
 			String docString = objectMapper.writeValueAsString(res);
-
+			System.out.println("------------name finder process started-----------");
+			parsePdfWithGNFinder(ufile.getPath(), null, document.getId());
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -1485,6 +1505,156 @@ public class DocumentServiceImpl implements DocumentService {
 
 		return null;
 
+	}
+
+	@SuppressWarnings("deprecation")
+	@Override
+	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, String fileUrl, Long documentId) {
+
+		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
+		String serverUrl = properties.getProperty("serverUrl");
+
+		GNFinderResponseMap gnfinderresponse = null;
+		String basePath = properties.getProperty("baseDocPath");
+		String completeFileUrl = serverUrl + basePath + filePath;
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+//MY CODE
+
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("http://127.0.0.1:8081/biodiv-image/content/documents/");
+		stringBuilder.append(filePath);
+
+		URIBuilder builder = new URIBuilder();
+		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
+
+		List<ParsedName> parsedName = null;
+
+		URI uri = null;
+		try {
+			uri = builder.build();
+			System.out.println(uri);
+			HttpGet request = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+				System.out.println(response.getStatusLine().toString());
+
+				HttpEntity entity = response.getEntity();
+				Header headers = entity.getContentType();
+				System.out.println(headers);
+
+				if (entity != null) {
+					// return it as a String
+					String result = EntityUtils.toString(entity);
+					gnfinderresponse = objectMapper.readValue(result, GNFinderResponseMap.class);
+					gnfinderresponse = MicroServicesUtils.fetchSpeciesDetails(gnfinderresponse, esService);
+					gnfinderresponse = mergeCommonObjects(gnfinderresponse);
+					saveScientificNamesInTable(gnfinderresponse.getNames(), documentId);
+					List<GnFinderResponseNames> ans = gnfinderresponse.getNames();
+
+					for (int i = 0; i < 5; i++) {
+						System.out.println(ans.get(i).getName());
+					}
+
+				}
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		} catch (URISyntaxException e1) {
+			logger.error(e1.getMessage());
+		}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		return gnfinderresponse;
+	}
+
+	private void saveScientificNamesInTable(List<GnFinderResponseNames> names, Long documentId) {
+		System.out.println("saving for docId = " + documentId);
+		for (GnFinderResponseNames name : names) {
+			DocSciName nameTosave = new DocSciName();
+			nameTosave.setCanonicalForm(name.getName());
+			nameTosave.setDocumentId(documentId);
+			nameTosave.setFrequency(name.getFrequency());
+			nameTosave.setIsDeleted(false);
+			nameTosave.setOffsetValues(name.getOffSet());
+			nameTosave.setScientificName(name.getName());
+			nameTosave.setTaxonConceptId(name.getTaxonId());
+			nameTosave.setVersion(0L);
+			nameTosave.setDisplayOrder(1);
+			nameTosave.setPrimaryName(0);
+			docSciNameDao.save(nameTosave);
+		}
+	}
+
+	private String concatValues(Object value1, Object value2) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("[").append(value1).append(",").append(value2).append("]");
+		return stringBuilder.toString();
+	}
+
+	private GNFinderResponseMap mergeCommonObjects(GNFinderResponseMap response) {
+		HashMap<String, GnFinderResponseNames> scientificNameMap = new HashMap<String, GnFinderResponseNames>();
+		List<GnFinderResponseNames> names = response.getNames();
+		// Integer order=1;
+		for (GnFinderResponseNames name : names) {
+			String scientificNameKey = name.getName();
+			String nameOffset = concatValues(name.getStart(), name.getEnd());
+
+			if (scientificNameMap.containsKey(scientificNameKey) == true) {
+				StringBuilder stringBuilder = new StringBuilder();
+				GnFinderResponseNames existingName = scientificNameMap.get(scientificNameKey);
+				String offSet = existingName.getOffSet();
+				existingName.setOffSet(stringBuilder.append(offSet).append(",").append(nameOffset).toString());
+				Integer prevFreq = existingName.getFrequency();
+				existingName.setFrequency(prevFreq + 1);
+				scientificNameMap.replace(scientificNameKey, existingName);
+			} else {
+				name.setOffSet(nameOffset);
+				name.setFrequency(1);
+				// name.setDisplayOrder(order);
+				// order++;
+				scientificNameMap.put(scientificNameKey, name);
+			}
+		}
+		ArrayList<GnFinderResponseNames> ans = new ArrayList<GnFinderResponseNames>(scientificNameMap.values());
+		// response.setNames((List<GnFinderResponseNames>) scientificNameMap.values());
+		response.setNames(ans);
+		return response;
+	}
+
+	public List<DocSciName> getNamesByDocumentId(Long documentId, int offset) {
+
+		try {
+
+			List<DocSciName> response = docSciNameDao.findByDocId(documentId);
+
+			int size = offset + 10;
+			int count = 1;
+			List<DocSciName> extractedNames = new ArrayList<>();
+			for (int iterator = 0; iterator <response.size(); iterator++) {
+				if (count <= size-10) {
+					count++;
+				} else {
+					if (count > size) {
+						break;
+					} else {
+						extractedNames.add(response.get(iterator));
+					}
+					count++;
+
+				}
+			}
+			
+			return extractedNames;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+
+		return null;
 	}
 
 }

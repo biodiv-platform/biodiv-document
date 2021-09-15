@@ -17,11 +17,13 @@ import com.strandls.activity.pojo.MailData;
 import com.strandls.document.pojo.BibFieldsData;
 import com.strandls.document.pojo.BibTexItemType;
 import com.strandls.document.pojo.BulkUploadExcelData;
+import com.strandls.document.pojo.DocSciName;
 import com.strandls.document.pojo.DocumentCreateData;
 import com.strandls.document.pojo.DocumentEditData;
 import com.strandls.document.pojo.DocumentMeta;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
+import com.strandls.document.pojo.GNFinderResponseMap;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.user.pojo.Follow;
@@ -101,5 +103,9 @@ public interface DocumentService {
 	public Boolean documentDownloadLog(HttpServletRequest request, DownloadLogData downloadLogData);
 
 	public List<DocumentMeta> getDocumentByTaxonId(Long taxonConceptId);
+
+	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, String fileUrl, Long documentId);
+
+	public List<DocSciName> getNamesByDocumentId(Long documentId,int offset);
 
 }
