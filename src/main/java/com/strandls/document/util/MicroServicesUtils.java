@@ -3,12 +3,7 @@
  */
 package com.strandls.document.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -19,11 +14,6 @@ import com.strandls.document.pojo.GnFinderResponseNames;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.ExtendedTaxonDefinition;
-
-/**
- * @author ashish
- *
- */
 
 public class MicroServicesUtils {
 
@@ -37,8 +27,7 @@ public class MicroServicesUtils {
 			try {
 				ExtendedTaxonDefinition taxonMapped = esServiceApi.matchPhrase("etd", "er", null, null,
 						"canonical_form", canonicalName);
-				// Integer speciesId = taxonMapped.getSpeciesId();
-				// name.setSpeciesId(speciesId.toString());
+
 				if (taxonMapped != null) {
 					name.setTaxonId(new Long(taxonMapped.getId()));
 				}

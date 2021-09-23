@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -401,7 +402,7 @@ public class DocumentServiceImpl implements DocumentService {
 			objectMapper.setDateFormat(df);
 			String docString = objectMapper.writeValueAsString(res);
 			System.out.println("------------name finder process started-----------");
-			parsePdfWithGNFinder(ufile.getPath(), null, document.getId());
+			parsePdfWithGNFinder(ufile.getPath(), document.getId());
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -1509,7 +1510,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 	@SuppressWarnings("deprecation")
 	@Override
-	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, String fileUrl, Long documentId) {
+	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
 
 		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
 		String serverUrl = properties.getProperty("serverUrl");
@@ -1518,9 +1519,6 @@ public class DocumentServiceImpl implements DocumentService {
 		String basePath = properties.getProperty("baseDocPath");
 		String completeFileUrl = serverUrl + basePath + filePath;
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------
-//MY CODE
-
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("http://127.0.0.1:8081/biodiv-image/content/documents/");
 		stringBuilder.append(filePath);
@@ -1528,12 +1526,9 @@ public class DocumentServiceImpl implements DocumentService {
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
 
-		List<ParsedName> parsedName = null;
-
 		URI uri = null;
 		try {
 			uri = builder.build();
-			System.out.println(uri);
 			HttpGet request = new HttpGet(uri);
 
 			try (CloseableHttpResponse response = httpClient.execute(request)) {
@@ -1541,20 +1536,17 @@ public class DocumentServiceImpl implements DocumentService {
 
 				HttpEntity entity = response.getEntity();
 				Header headers = entity.getContentType();
-				System.out.println(headers);
 
 				if (entity != null) {
-					// return it as a String
 					String result = EntityUtils.toString(entity);
 					gnfinderresponse = objectMapper.readValue(result, GNFinderResponseMap.class);
 					gnfinderresponse = MicroServicesUtils.fetchSpeciesDetails(gnfinderresponse, esService);
 					gnfinderresponse = mergeCommonObjects(gnfinderresponse);
-					saveScientificNamesInTable(gnfinderresponse.getNames(), documentId);
-					List<GnFinderResponseNames> ans = gnfinderresponse.getNames();
 
-					for (int i = 0; i < 5; i++) {
-						System.out.println(ans.get(i).getName());
-					}
+					List<GnFinderResponseNames> unsortedNames = gnfinderresponse.getNames();
+					List<GnFinderResponseNames> sortedNames = sortScientificNamesOnFrequency(unsortedNames);
+
+					saveScientificNamesInTable(sortedNames, documentId);
 
 				}
 
@@ -1566,13 +1558,21 @@ public class DocumentServiceImpl implements DocumentService {
 			logger.error(e1.getMessage());
 		}
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------------
-
 		return gnfinderresponse;
 	}
 
+	private List<GnFinderResponseNames> sortScientificNamesOnFrequency(List<GnFinderResponseNames> names) {
+		Collections.sort(names, new Comparator<GnFinderResponseNames>() {
+			public int compare(GnFinderResponseNames name1, GnFinderResponseNames name2) {
+				return ((Integer) name2.getFrequency()).compareTo(name1.getFrequency());
+			}
+		});
+
+		return names;
+	}
+
 	private void saveScientificNamesInTable(List<GnFinderResponseNames> names, Long documentId) {
-		System.out.println("saving for docId = " + documentId);
+		int order = 1;
 		for (GnFinderResponseNames name : names) {
 			DocSciName nameTosave = new DocSciName();
 			nameTosave.setCanonicalForm(name.getName());
@@ -1583,8 +1583,9 @@ public class DocumentServiceImpl implements DocumentService {
 			nameTosave.setScientificName(name.getName());
 			nameTosave.setTaxonConceptId(name.getTaxonId());
 			nameTosave.setVersion(0L);
-			nameTosave.setDisplayOrder(1);
+			nameTosave.setDisplayOrder(order);
 			nameTosave.setPrimaryName(0);
+			order++;
 			docSciNameDao.save(nameTosave);
 		}
 	}
@@ -1598,7 +1599,7 @@ public class DocumentServiceImpl implements DocumentService {
 	private GNFinderResponseMap mergeCommonObjects(GNFinderResponseMap response) {
 		HashMap<String, GnFinderResponseNames> scientificNameMap = new HashMap<String, GnFinderResponseNames>();
 		List<GnFinderResponseNames> names = response.getNames();
-		// Integer order=1;
+
 		for (GnFinderResponseNames name : names) {
 			String scientificNameKey = name.getName();
 			String nameOffset = concatValues(name.getStart(), name.getEnd());
@@ -1614,13 +1615,10 @@ public class DocumentServiceImpl implements DocumentService {
 			} else {
 				name.setOffSet(nameOffset);
 				name.setFrequency(1);
-				// name.setDisplayOrder(order);
-				// order++;
 				scientificNameMap.put(scientificNameKey, name);
 			}
 		}
 		ArrayList<GnFinderResponseNames> ans = new ArrayList<GnFinderResponseNames>(scientificNameMap.values());
-		// response.setNames((List<GnFinderResponseNames>) scientificNameMap.values());
 		response.setNames(ans);
 		return response;
 	}
@@ -1634,8 +1632,8 @@ public class DocumentServiceImpl implements DocumentService {
 			int size = offset + 10;
 			int count = 1;
 			List<DocSciName> extractedNames = new ArrayList<>();
-			for (int iterator = 0; iterator <response.size(); iterator++) {
-				if (count <= size-10) {
+			for (int iterator = 0; iterator < response.size(); iterator++) {
+				if (count <= size - 10) {
 					count++;
 				} else {
 					if (count > size) {
@@ -1644,17 +1642,40 @@ public class DocumentServiceImpl implements DocumentService {
 						extractedNames.add(response.get(iterator));
 					}
 					count++;
-
 				}
 			}
-			
 			return extractedNames;
-
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
+		return null;
+	}
+
+	public DocSciName updateScienticNametoIsDeleted(HttpServletRequest request, Long id) {
+
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+		JSONArray roles = (JSONArray) profile.getAttribute("roles");
+
+		DocSciName scientifNameDetails = docSciNameDao.findById(id);
+		Document documentDetails = documentDao.findById(scientifNameDetails.getDocumentId());
+
+		Long authorId = documentDetails.getAuthorId();
+
+		if (roles.contains("ROLE_ADMIN") || userId.equals(authorId)) {
+
+			DocSciName updatedName;
+			DocSciName existingName = docSciNameDao.findById(id);
+			existingName.setIsDeleted(true);
+			updatedName = docSciNameDao.update(existingName);
+			if (updatedName != null) {
+				return updatedName;
+			}
+
+		}
 
 		return null;
+
 	}
 
 }

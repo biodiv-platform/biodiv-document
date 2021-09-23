@@ -45,6 +45,7 @@ import com.strandls.document.pojo.DocumentMeta;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
 import com.strandls.document.pojo.GNFinderResponseMap;
+import com.strandls.document.pojo.GnFinderResponseNames;
 import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentListService;
@@ -99,14 +100,36 @@ public class DocumentController {
 		return Response.status(Status.OK).entity("PONG").build();
 	}
 
+	@PUT
+	@Path(ApiConstants.DELETENAME + "/{nameId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "delete scientific name detected for a document by gnfinder", notes = "returns the object with updated column", response = DocSciName[].class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
+
+	@ValidateUser
+	public Response deleteScientificName(@Context HttpServletRequest request, @PathParam("nameId") Long nameId) {
+		try {
+			DocSciName response = docService.updateScienticNametoIsDeleted(request, nameId);
+			return Response.status(Status.OK).entity(response).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+
+	}
+
 	@GET
 	@Path(ApiConstants.GNRD)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	public Response parsePdfWithGNFinder(@QueryParam("filePath") String filePath, @QueryParam("fileUrl") String fileUrl,
+	@ApiOperation(value = "detects scientific names in pdf files through gnfinder", notes = "returns the scientific names details detected by gnfinder", response = GNFinderResponseMap.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
+
+	public Response parsePdfWithGNFinder(@QueryParam("filePath") String filePath,
 			@QueryParam("documentId") Long documentId) {
-		GNFinderResponseMap response = docService.parsePdfWithGNFinder(filePath, fileUrl, documentId);
+		GNFinderResponseMap response = docService.parsePdfWithGNFinder(filePath, documentId);
 		return Response.status(Status.OK).entity(response).build();
 	}
 

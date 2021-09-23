@@ -82,5 +82,9 @@ public class DocSciNameDao extends AbstractDAO<DocSciName, Long> {
 		}
 		return result;
 	}
+	
+	
+	
+	
 
 }

@@ -104,8 +104,10 @@ public interface DocumentService {
 
 	public List<DocumentMeta> getDocumentByTaxonId(Long taxonConceptId);
 
-	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, String fileUrl, Long documentId);
+	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId);
 
-	public List<DocSciName> getNamesByDocumentId(Long documentId,int offset);
+	public List<DocSciName> getNamesByDocumentId(Long documentId, int offset);
+
+	public DocSciName updateScienticNametoIsDeleted(HttpServletRequest request, Long id);
 
 }
