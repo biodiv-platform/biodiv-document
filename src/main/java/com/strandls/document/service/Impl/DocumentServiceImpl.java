@@ -1543,10 +1543,11 @@ public class DocumentServiceImpl implements DocumentService {
 					gnfinderresponse = MicroServicesUtils.fetchSpeciesDetails(gnfinderresponse, esService);
 					gnfinderresponse = mergeCommonObjects(gnfinderresponse);
 
-					List<GnFinderResponseNames> unsortedNames = gnfinderresponse.getNames();
-					List<GnFinderResponseNames> sortedNames = sortScientificNamesOnFrequency(unsortedNames);
-
-					saveScientificNamesInTable(sortedNames, documentId);
+					if (documentId != null) {
+						List<GnFinderResponseNames> unsortedNames = gnfinderresponse.getNames();
+						List<GnFinderResponseNames> sortedNames = sortScientificNamesOnFrequency(unsortedNames);
+						saveScientificNamesInTable(sortedNames, documentId);
+					}
 
 				}
 

@@ -25,15 +25,14 @@ public class MicroServicesUtils {
 		for (GnFinderResponseNames name : names) {
 			String canonicalName = name.getName();
 			try {
-				ExtendedTaxonDefinition taxonMapped = esServiceApi.matchPhrase("etd", "er", null, null,
-						"canonical_form", canonicalName);
+				ExtendedTaxonDefinition taxonMapped = esServiceApi.matchPhrase("etd", "er", "", "", "canonical_form",
+						canonicalName);
 
 				if (taxonMapped != null) {
 					name.setTaxonId(new Long(taxonMapped.getId()));
 				}
 				detailedNames.add(name);
 			} catch (ApiException e) {
-				e.printStackTrace();
 				logger.error(e.getMessage());
 			}
 		}
