@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.strandls.document.dao.BibTexItemTypeDao;
 import com.strandls.document.pojo.BibFieldsData;
 import com.strandls.document.pojo.Document;
+import com.strandls.document.util.PropertyFileUtil;
 import com.strandls.resource.pojo.UFile;
 
 /**
@@ -31,6 +32,9 @@ public class DocumentHelper {
 
 	@Inject
 	private BibTexItemTypeDao bibTexItemTypeDao;
+
+	private Long defaultLanguageId = Long
+			.parseLong(PropertyFileUtil.fetchProperty("config.properties", "defaultLanguageId"));
 
 	@SuppressWarnings("deprecation")
 	public Document bulkUploadPayload(Row dataRow, Map<String, Integer> fieldMapping, Long authorId, UFile ufile) {
@@ -361,7 +365,7 @@ public class DocumentHelper {
 			document = new Document(null, 0L, true, attribution, authorId, contributors, null, new Date(), notes, doi,
 					new Date(), Long.parseLong(fieldMapping.get("licenseId").toString()), null, null, title, type,
 					(ufile != null ? ufile.getId() : null), null, null, null, null, null, null, null, null, null,
-					new Date(), null, 0, 0, 205L, null, null, null, null, null, null, null, null, null, 1,
+					new Date(), null, 0, 0, defaultLanguageId, null, null, null, null, null, null, null, null, null, 1,
 					(rating != null) ? Integer.parseInt(rating) : 0, false, null, null, authors, journal, bookTitle,
 					year, month, volume, number, pages, publisher, school, edition, series, address, chapter, note,
 					editor, organization, howPublished, institution, url, language, file, itemtype, isbn, extra);

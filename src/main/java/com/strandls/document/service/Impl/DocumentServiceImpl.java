@@ -79,6 +79,7 @@ import com.strandls.document.pojo.DownloadLog;
 import com.strandls.document.pojo.DownloadLogData;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentService;
+import com.strandls.document.util.PropertyFileUtil;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
@@ -214,6 +215,9 @@ public class DocumentServiceImpl implements DocumentService {
 	@Inject
 	private ESUpdate esUpdate;
 
+	private Long defaultLanguageId = Long
+			.parseLong(PropertyFileUtil.fetchProperty("config.properties", "defaultLanguageId"));
+
 	@Override
 	public ShowDocument show(Long documentId) {
 		try {
@@ -224,7 +228,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 				List<DocumentCoverage> documentCoverages = docCoverageDao.findByDocumentId(documentId);
 
-				List<Landscape> allLandscape = landScapeService.getAllLandScapes(205L, -1, -1);
+				List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
 				for (DocumentCoverage docCoverage : documentCoverages) {
 					if (docCoverage.getGeoEntityId() != null) {
 						for (Landscape landscape : allLandscape) {
@@ -317,8 +321,8 @@ public class DocumentServiceImpl implements DocumentService {
 					documentCreateData.getContribution(), null, new Date(), bibData.getDescription(), bibData.getDoi(),
 					new Date(), documentCreateData.getLicenseId(), null, null, bibData.getTitle(), bibData.getType(),
 					(ufile != null ? ufile.getId() : null), documentCreateData.getFromDate(), null, null, null, null,
-					null, null, null, null, documentCreateData.getFromDate(), null, 0, 0, 205L, null, null, null, null,
-					null, null, null, null, null, 1, documentCreateData.getRating(), false, null, null,
+					null, null, null, null, documentCreateData.getFromDate(), null, 0, 0, defaultLanguageId, null, null,
+					null, null, null, null, null, null, null, 1, documentCreateData.getRating(), false, null, null,
 					bibData.getAuthor(), bibData.getJournal(), bibData.getBooktitle(), bibData.getYear(),
 					bibData.getMonth(), bibData.getVolume(), bibData.getNumber(), bibData.getPages(),
 					bibData.getPublisher(), bibData.getSchool(), bibData.getEdition(), bibData.getSeries(),
@@ -710,7 +714,7 @@ public class DocumentServiceImpl implements DocumentService {
 			dataSheetIterator.next();
 
 //			EXTRACT SITE NUMBER TO GEOENTITY MAPPING
-			List<Landscape> allLandscape = landScapeService.getAllLandScapes(205L, -1, -1);
+			List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
 			Map<Long, Long> siteGeoentitiyMapping = new HashMap<Long, Long>();
 			for (Landscape landScape : allLandscape) {
 				siteGeoentitiyMapping.put(landScape.getSiteNumber(), landScape.getGeoEntityId());
