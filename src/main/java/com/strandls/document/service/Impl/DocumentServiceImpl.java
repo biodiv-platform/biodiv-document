@@ -1515,9 +1515,11 @@ public class DocumentServiceImpl implements DocumentService {
 		String basePath = properties.getProperty("baseDocPath");
 		String completeFileUrl = serverUrl + basePath + filePath;
 
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("http://127.0.0.1:8081/biodiv-image/content/documents/");
-		stringBuilder.append(filePath);
+		/*
+		 * StringBuilder stringBuilder = new StringBuilder();
+		 * stringBuilder.append("http://127.0.0.1:8081/biodiv-image/content/documents/")
+		 * ; stringBuilder.append(filePath);
+		 */
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
