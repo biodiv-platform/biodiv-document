@@ -3,12 +3,9 @@
  */
 package com.strandls.document.service.Impl;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
@@ -132,7 +129,6 @@ import com.strandls.utility.pojo.FlagIbp;
 import com.strandls.utility.pojo.FlagShow;
 import com.strandls.utility.pojo.Habitat;
 import com.strandls.utility.pojo.Language;
-import com.strandls.utility.pojo.ParsedName;
 import com.strandls.utility.pojo.Tags;
 import com.strandls.utility.pojo.TagsMapping;
 import com.strandls.utility.pojo.TagsMappingData;
@@ -1532,10 +1528,8 @@ public class DocumentServiceImpl implements DocumentService {
 			HttpGet request = new HttpGet(uri);
 
 			try (CloseableHttpResponse response = httpClient.execute(request)) {
-				System.out.println(response.getStatusLine().toString());
 
 				HttpEntity entity = response.getEntity();
-				Header headers = entity.getContentType();
 
 				if (entity != null) {
 					String result = EntityUtils.toString(entity);
