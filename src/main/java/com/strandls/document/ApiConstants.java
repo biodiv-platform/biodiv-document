@@ -45,6 +45,6 @@ public class ApiConstants {
 	public static final String V1 = "/v1";
 	public static final String GNRD="/gnfinder";
 	public static final String NAMES="/names";
-	public static final String DELETENAME="/deleteName";
+	public static final String DELETENAME="/deletename";
 
 }

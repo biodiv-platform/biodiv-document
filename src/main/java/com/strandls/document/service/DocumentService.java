@@ -106,7 +106,7 @@ public interface DocumentService {
 
 	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId);
 
-	public List<DocSciName> getNamesByDocumentId(Long documentId, int offset);
+	public List<DocSciName> getNamesByDocumentId(Long documentId, Integer offset);
 
 	public DocSciName updateScienticNametoIsDeleted(HttpServletRequest request, Long id);
 

@@ -1614,28 +1614,11 @@ public class DocumentServiceImpl implements DocumentService {
 		return response;
 	}
 
-	public List<DocSciName> getNamesByDocumentId(Long documentId, int offset) {
+	public List<DocSciName> getNamesByDocumentId(Long documentId, Integer offset) {
 
 		try {
-
-			List<DocSciName> response = docSciNameDao.findByDocId(documentId);
-
-			int size = offset + 10;
-			int count = 1;
-			List<DocSciName> extractedNames = new ArrayList<>();
-			for (int iterator = 0; iterator < response.size(); iterator++) {
-				if (count <= size - 10) {
-					count++;
-				} else {
-					if (count > size) {
-						break;
-					} else {
-						extractedNames.add(response.get(iterator));
-					}
-					count++;
-				}
-			}
-			return extractedNames;
+			List<DocSciName> response = docSciNameDao.findByDocId(documentId, offset);
+			return response;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}

@@ -105,7 +105,7 @@ public class DocumentController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "delete scientific name detected for a document by gnfinder", notes = "returns the object with updated column", response = DocSciName[].class)
+	@ApiOperation(value = "delete scientific name detected for a document by gnfinder", notes = "returns the object with updated column", response = DocSciName.class)
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
 
 	@ValidateUser
@@ -129,8 +129,13 @@ public class DocumentController {
 
 	public Response parsePdfWithGNFinder(@QueryParam("filePath") String filePath,
 			@QueryParam("documentId") Long documentId) {
-		GNFinderResponseMap response = docService.parsePdfWithGNFinder(filePath, documentId);
-		return Response.status(Status.OK).entity(response).build();
+
+		try {
+			GNFinderResponseMap response = docService.parsePdfWithGNFinder(filePath, documentId);
+			return Response.status(Status.OK).entity(response).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 	}
 
 	@GET
@@ -138,10 +143,11 @@ public class DocumentController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "fetch the scientific names in pdf documents", notes = "returns the scientific names detected by gnfinder", response = DocSciName[].class)
+	@ApiOperation(value = "fetch the scientific names in pdf documents", notes = "returns the scientific names detected by gnfinder", response = DocSciName.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
 
-	public Response findNamesInDocument(@PathParam("documentId") Long documentId, @QueryParam("offset") int offset) {
+	public Response findNamesInDocument(@PathParam("documentId") Long documentId,
+			@QueryParam("offset") Integer offset) {
 
 		try {
 			List<DocSciName> response = docService.getNamesByDocumentId(documentId, offset);
