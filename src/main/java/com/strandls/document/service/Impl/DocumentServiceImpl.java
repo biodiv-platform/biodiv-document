@@ -1513,7 +1513,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 		GNFinderResponseMap gnfinderresponse = null;
 		String basePath = properties.getProperty("baseDocPath");
-		String completeFileUrl = serverUrl + basePath + filePath;
+		String completeFileUrl = serverUrl + "/" + basePath + filePath;
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
