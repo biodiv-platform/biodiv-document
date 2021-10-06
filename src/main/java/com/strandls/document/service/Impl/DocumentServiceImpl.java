@@ -1568,17 +1568,9 @@ public class DocumentServiceImpl implements DocumentService {
 	private void saveScientificNamesInTable(List<GnFinderResponseNames> names, Long documentId) {
 		int order = 1;
 		for (GnFinderResponseNames name : names) {
-			DocSciName nameTosave = new DocSciName();
-			nameTosave.setCanonicalForm(name.getName());
-			nameTosave.setDocumentId(documentId);
-			nameTosave.setFrequency(name.getFrequency());
-			nameTosave.setIsDeleted(false);
-			nameTosave.setOffsetValues(name.getOffSet());
-			nameTosave.setScientificName(name.getName());
-			nameTosave.setTaxonConceptId(name.getTaxonId());
-			nameTosave.setVersion(0L);
-			nameTosave.setDisplayOrder(order);
-			nameTosave.setPrimaryName(0);
+			DocSciName nameTosave = new DocSciName(null, 0L, name.getName(), order, documentId, name.getFrequency(),
+					name.getOffSet(), name.getName(), name.getTaxonId(), 0, false);
+
 			order++;
 			docSciNameDao.save(nameTosave);
 		}
