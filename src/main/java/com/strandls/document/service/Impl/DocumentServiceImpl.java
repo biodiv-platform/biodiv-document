@@ -6,15 +6,19 @@ package com.strandls.document.service.Impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,14 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -77,8 +89,11 @@ import com.strandls.document.pojo.DocumentSpeciesGroup;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLog;
 import com.strandls.document.pojo.DownloadLogData;
+import com.strandls.document.pojo.GNFinderResponseMap;
+import com.strandls.document.pojo.GnFinderResponseNames;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentService;
+import com.strandls.document.util.MicroServicesUtils;
 import com.strandls.document.util.PropertyFileUtil;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
@@ -133,7 +148,7 @@ import net.minidev.json.JSONArray;
 public class DocumentServiceImpl implements DocumentService {
 
 	private final Logger logger = LoggerFactory.getLogger(DocumentServiceImpl.class);
-
+	private final CloseableHttpClient httpClient = HttpClients.createDefault();
 	@Inject
 	private DocumentDao documentDao;
 
@@ -385,7 +400,8 @@ public class DocumentServiceImpl implements DocumentService {
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 			objectMapper.setDateFormat(df);
 			String docString = objectMapper.writeValueAsString(res);
-
+			System.out.println("------------name finder process started-----------");
+			parsePdfWithGNFinder(ufile.getPath(), document.getId());
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -1485,6 +1501,146 @@ public class DocumentServiceImpl implements DocumentService {
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
+		}
+
+		return null;
+
+	}
+
+	@SuppressWarnings("deprecation")
+	@Override
+	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
+
+		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
+		String serverUrl = properties.getProperty("serverUrl");
+
+		GNFinderResponseMap gnfinderresponse = null;
+		String basePath = properties.getProperty("baseDocPath");
+		String completeFileUrl = serverUrl + "/" + basePath + filePath;
+
+		URIBuilder builder = new URIBuilder();
+		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
+
+		URI uri = null;
+		try {
+			uri = builder.build();
+			HttpGet request = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+
+				HttpEntity entity = response.getEntity();
+
+				if (entity != null) {
+					String result = EntityUtils.toString(entity);
+					gnfinderresponse = objectMapper.readValue(result, GNFinderResponseMap.class);
+					gnfinderresponse = MicroServicesUtils.fetchSpeciesDetails(gnfinderresponse, esService);
+					gnfinderresponse = mergeCommonObjects(gnfinderresponse);
+
+					if (documentId != null) {
+						List<GnFinderResponseNames> unsortedNames = gnfinderresponse.getNames();
+						List<GnFinderResponseNames> sortedNames = sortScientificNamesOnFrequency(unsortedNames);
+						saveScientificNamesInTable(sortedNames, documentId);
+					}
+
+				}
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		} catch (URISyntaxException e1) {
+			logger.error(e1.getMessage());
+		}
+
+		return gnfinderresponse;
+	}
+
+	private List<GnFinderResponseNames> sortScientificNamesOnFrequency(List<GnFinderResponseNames> names) {
+		Collections.sort(names, new Comparator<GnFinderResponseNames>() {
+			public int compare(GnFinderResponseNames name1, GnFinderResponseNames name2) {
+				return ((Integer) name2.getFrequency()).compareTo(name1.getFrequency());
+			}
+		});
+
+		return names;
+	}
+
+	private void saveScientificNamesInTable(List<GnFinderResponseNames> names, Long documentId) {
+		int order = 1;
+		for (GnFinderResponseNames name : names) {
+			DocSciName nameTosave = new DocSciName(null, 0L, name.getName(), order, documentId, name.getFrequency(),
+					name.getOffSet(), name.getName(), name.getTaxonId(), 0, false);
+
+			order++;
+			docSciNameDao.save(nameTosave);
+		}
+	}
+
+	private String concatValues(Object value1, Object value2) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("[").append(value1).append(",").append(value2).append("]");
+		return stringBuilder.toString();
+	}
+
+	private GNFinderResponseMap mergeCommonObjects(GNFinderResponseMap response) {
+		HashMap<String, GnFinderResponseNames> scientificNameMap = new HashMap<String, GnFinderResponseNames>();
+		List<GnFinderResponseNames> names = response.getNames();
+
+		for (GnFinderResponseNames name : names) {
+			String scientificNameKey = name.getName();
+			String nameOffset = concatValues(name.getStart(), name.getEnd());
+
+			if (scientificNameMap.containsKey(scientificNameKey) == true) {
+				StringBuilder stringBuilder = new StringBuilder();
+				GnFinderResponseNames existingName = scientificNameMap.get(scientificNameKey);
+				String offSet = existingName.getOffSet();
+				existingName.setOffSet(stringBuilder.append(offSet).append(",").append(nameOffset).toString());
+				Integer prevFreq = existingName.getFrequency();
+				existingName.setFrequency(prevFreq + 1);
+				scientificNameMap.replace(scientificNameKey, existingName);
+			} else {
+				name.setOffSet(nameOffset);
+				name.setFrequency(1);
+				scientificNameMap.put(scientificNameKey, name);
+			}
+		}
+		ArrayList<GnFinderResponseNames> ans = new ArrayList<GnFinderResponseNames>(scientificNameMap.values());
+		response.setNames(ans);
+		return response;
+	}
+
+	public List<DocSciName> getNamesByDocumentId(Long documentId, Integer offset) {
+
+		try {
+			List<DocSciName> response = docSciNameDao.findByDocId(documentId, offset);
+			return response;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+	}
+
+	public DocSciName updateScienticNametoIsDeleted(HttpServletRequest request, Long id) {
+
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+		JSONArray roles = (JSONArray) profile.getAttribute("roles");
+
+		DocSciName scientifNameDetails = docSciNameDao.findById(id);
+		Document documentDetails = documentDao.findById(scientifNameDetails.getDocumentId());
+
+		Long authorId = documentDetails.getAuthorId();
+
+		if (roles.contains("ROLE_ADMIN") || userId.equals(authorId)) {
+
+			DocSciName updatedName;
+			DocSciName existingName = docSciNameDao.findById(id);
+			existingName.setIsDeleted(true);
+			updatedName = docSciNameDao.update(existingName);
+			if (updatedName != null) {
+				return updatedName;
+			}
+
 		}
 
 		return null;
