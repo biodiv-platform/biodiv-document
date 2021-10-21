@@ -12,6 +12,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Type;
+
 /**
  * @author Abhishek Rudra
  *
@@ -132,6 +134,7 @@ public class DocSciName implements Serializable {
 	}
 
 	@Column(name = "offset_values")
+	@Type(type = "text")
 	public String getOffsetValues() {
 		return offsetValues;
 	}
