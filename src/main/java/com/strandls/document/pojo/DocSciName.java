@@ -29,7 +29,6 @@ public class DocSciName implements Serializable {
 	 */
 	private static final long serialVersionUID = -2996462430848765907L;
 	private Long id;
-	private Long version;
 	private String canonicalForm;
 	private Integer displayOrder;
 	private Long documentId;
@@ -37,7 +36,6 @@ public class DocSciName implements Serializable {
 	private String offsetValues;
 	private String scientificName;
 	private Long taxonConceptId;
-	private Integer primaryName;
 	private Boolean isDeleted;
 
 	/**
@@ -49,7 +47,6 @@ public class DocSciName implements Serializable {
 
 	/**
 	 * @param id
-	 * @param version
 	 * @param canonicalForm
 	 * @param displayOrder
 	 * @param documentId
@@ -57,15 +54,12 @@ public class DocSciName implements Serializable {
 	 * @param offsetValues
 	 * @param scientificName
 	 * @param taxonConceptId
-	 * @param primaryName
 	 * @param isDeleted
 	 */
-	public DocSciName(Long id, Long version, String canonicalForm, Integer displayOrder, Long documentId,
-			Integer frequency, String offsetValues, String scientificName, Long taxonConceptId, Integer primaryName,
-			Boolean isDeleted) {
+	public DocSciName(Long id, String canonicalForm, Integer displayOrder, Long documentId, Integer frequency,
+			String offsetValues, String scientificName, Long taxonConceptId, Boolean isDeleted) {
 		super();
 		this.id = id;
-		this.version = version;
 		this.canonicalForm = canonicalForm;
 		this.displayOrder = displayOrder;
 		this.documentId = documentId;
@@ -73,7 +67,6 @@ public class DocSciName implements Serializable {
 		this.offsetValues = offsetValues;
 		this.scientificName = scientificName;
 		this.taxonConceptId = taxonConceptId;
-		this.primaryName = primaryName;
 		this.isDeleted = isDeleted;
 	}
 
@@ -86,15 +79,6 @@ public class DocSciName implements Serializable {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	@Column(name = "version")
-	public Long getVersion() {
-		return version;
-	}
-
-	public void setVersion(Long version) {
-		this.version = version;
 	}
 
 	@Column(name = "canonical_form")
@@ -159,15 +143,6 @@ public class DocSciName implements Serializable {
 
 	public void setTaxonConceptId(Long taxonConceptId) {
 		this.taxonConceptId = taxonConceptId;
-	}
-
-	@Column(name = "primary_name")
-	public Integer getPrimaryName() {
-		return primaryName;
-	}
-
-	public void setPrimaryName(Integer primaryName) {
-		this.primaryName = primaryName;
 	}
 
 	@Column(name = "is_deleted")
