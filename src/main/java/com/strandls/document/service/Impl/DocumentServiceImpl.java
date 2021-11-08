@@ -18,15 +18,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -332,13 +331,12 @@ public class DocumentServiceImpl implements DocumentService {
 			}
 
 			BibFieldsData bibData = documentCreateData.getBibFieldData();
-			Document document = new Document(null, 0L, true, documentCreateData.getAttribution(), authorId,
-					documentCreateData.getContribution(), null, new Date(), bibData.getDescription(), bibData.getDoi(),
-					new Date(), documentCreateData.getLicenseId(), null, null, bibData.getTitle(), bibData.getType(),
-					(ufile != null ? ufile.getId() : null), documentCreateData.getFromDate(), null, null, null, null,
-					null, null, null, null, documentCreateData.getFromDate(), null, 0, 0, defaultLanguageId, null, null,
-					null, null, null, null, null, null, null, 1, documentCreateData.getRating(), false, null, null,
-					bibData.getAuthor(), bibData.getJournal(), bibData.getBooktitle(), bibData.getYear(),
+			Document document = new Document(null, true, documentCreateData.getAttribution(), authorId,
+					documentCreateData.getContribution(), new Date(), bibData.getDescription(), bibData.getDoi(),
+					new Date(), documentCreateData.getLicenseId(), bibData.getTitle(), bibData.getType(),
+					(ufile != null ? ufile.getId() : null), documentCreateData.getFromDate(),
+					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, null, 1, documentCreateData.getRating(),
+					false, null, bibData.getAuthor(), bibData.getJournal(), bibData.getBooktitle(), bibData.getYear(),
 					bibData.getMonth(), bibData.getVolume(), bibData.getNumber(), bibData.getPages(),
 					bibData.getPublisher(), bibData.getSchool(), bibData.getEdition(), bibData.getSeries(),
 					bibData.getAddress(), bibData.getChapter(), bibData.getNote(), bibData.getEditor(),
@@ -1568,8 +1566,8 @@ public class DocumentServiceImpl implements DocumentService {
 	private void saveScientificNamesInTable(List<GnFinderResponseNames> names, Long documentId) {
 		int order = 1;
 		for (GnFinderResponseNames name : names) {
-			DocSciName nameTosave = new DocSciName(null, 0L, name.getName(), order, documentId, name.getFrequency(),
-					name.getOffSet(), name.getName(), name.getTaxonId(), 0, false);
+			DocSciName nameTosave = new DocSciName(null, name.getName(), order, documentId, name.getFrequency(),
+					name.getOffSet(), name.getName(), name.getTaxonId(), false);
 
 			order++;
 			docSciNameDao.save(nameTosave);
