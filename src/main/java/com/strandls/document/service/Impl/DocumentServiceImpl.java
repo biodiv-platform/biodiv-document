@@ -644,7 +644,7 @@ public class DocumentServiceImpl implements DocumentService {
 				documentDao.update(document);
 				System.out.print("===deleted docuemnt===" + documentId + "returned" + result.getValue());
 				logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-						document.getId(), "Document", null, "Document removed", generateMailData(document.getId()));
+						document.getId(), "Document", null, "Document Deleted", generateMailData(document.getId()));
 				return true;
 			}
 
@@ -1246,7 +1246,7 @@ public class DocumentServiceImpl implements DocumentService {
 			documentDao.update(document);
 
 			logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-					document.getId(), "Document", null, "Document flagged", generateMailData(document.getId()));
+					document.getId(), "Document", null, "Flagged", generateMailData(document.getId()));
 
 			updateDocumentLastRevised(documentId);
 
