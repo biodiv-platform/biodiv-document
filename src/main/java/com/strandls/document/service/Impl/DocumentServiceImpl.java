@@ -600,7 +600,6 @@ public class DocumentServiceImpl implements DocumentService {
 			documentMailData.setCreatedOn(document.getCreatedOn());
 			documentMailData.setDocumentId(documentId);
 			documentMailData.setTitle(document.getTitle());
-			documentMailData.setType(document.getType());
 
 			List<UserGroupIbp> userGroupIbp = ugService.getUserGroupByDocId(documentId.toString());
 			List<UserGroupMailData> userGroupData = new ArrayList<UserGroupMailData>();
