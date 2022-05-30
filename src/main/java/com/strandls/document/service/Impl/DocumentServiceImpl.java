@@ -66,7 +66,6 @@ import com.strandls.document.dao.DocumentCoverageDao;
 import com.strandls.document.dao.DocumentDao;
 import com.strandls.document.dao.DocumentHabitatDao;
 import com.strandls.document.dao.DocumentSpeciesGroupDao;
-import com.strandls.document.dao.DownloadLogDao;
 import com.strandls.document.es.util.DocumentIndex;
 import com.strandls.document.es.util.ESUpdate;
 import com.strandls.document.es.util.ESUpdateThread;
@@ -209,9 +208,6 @@ public class DocumentServiceImpl implements DocumentService {
 	private DocumentHelper docHelper;
 
 	@Inject
-	private DownloadLogDao downloadLogDao;
-
-	@Inject
 	private RabbitMQProducer producer;
 
 	@Inject
@@ -347,7 +343,7 @@ public class DocumentServiceImpl implements DocumentService {
 			document = documentDao.save(document);
 
 			logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-					document.getId(), "Document", null, "Document created", null);
+					document.getId(), "Document", null, "Document created", generateMailData(document.getId()));
 
 //			speciesGroup
 
@@ -366,6 +362,7 @@ public class DocumentServiceImpl implements DocumentService {
 				UserGroupDocCreateData groupDocCreateData = new UserGroupDocCreateData();
 				groupDocCreateData.setDocumentId(document.getId());
 				groupDocCreateData.setUserGroupIds(documentCreateData.getUserGroupId());
+				groupDocCreateData.setMailData(converter.userGroupMetadata(generateMailData(document.getId())));
 				ugService = headers.addUserGroupHeader(ugService, request.getHeader(HttpHeaders.AUTHORIZATION));
 				ugService.createUGDocMapping(groupDocCreateData);
 			}
@@ -579,7 +576,7 @@ public class DocumentServiceImpl implements DocumentService {
 				documentDao.update(document);
 
 				logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-						document.getId(), "Document", null, "Document updated", null);
+						document.getId(), "Document", null, "Document updated", generateMailData(document.getId()));
 
 				updateDocumentLastRevised(document.getId());
 
@@ -602,6 +599,7 @@ public class DocumentServiceImpl implements DocumentService {
 			documentMailData.setAuthorId(document.getAuthorId());
 			documentMailData.setCreatedOn(document.getCreatedOn());
 			documentMailData.setDocumentId(documentId);
+			documentMailData.setTitle(document.getTitle());
 
 			List<UserGroupIbp> userGroupIbp = ugService.getUserGroupByDocId(documentId.toString());
 			List<UserGroupMailData> userGroupData = new ArrayList<UserGroupMailData>();
@@ -644,6 +642,8 @@ public class DocumentServiceImpl implements DocumentService {
 				document.setIsDeleted(true);
 				documentDao.update(document);
 				System.out.print("===deleted docuemnt===" + documentId + "returned" + result.getValue());
+				logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
+						document.getId(), "Document", null, "Document Deleted", generateMailData(document.getId()));
 				return true;
 			}
 
@@ -822,7 +822,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 //				Activity
 				logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-						document.getId(), "Document", null, "Document created", null);
+						document.getId(), "Document", null, "Document created", generateMailData(document.getId()));
 
 //				CITED NAME
 				if (fieldMapping.get("citedName") != null) {
@@ -1244,6 +1244,9 @@ public class DocumentServiceImpl implements DocumentService {
 			document.setFlagCount(flagCount);
 			documentDao.update(document);
 
+			logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
+					document.getId(), "Document", null, "Flagged", generateMailData(document.getId()));
+
 			updateDocumentLastRevised(documentId);
 
 			return flagList;
@@ -1505,7 +1508,6 @@ public class DocumentServiceImpl implements DocumentService {
 
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
 
