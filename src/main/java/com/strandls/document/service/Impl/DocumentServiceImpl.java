@@ -1243,10 +1243,6 @@ public class DocumentServiceImpl implements DocumentService {
 			Document document = documentDao.findById(documentId);
 			document.setFlagCount(flagCount);
 			documentDao.update(document);
-
-			logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-					document.getId(), "Document", null, "Flagged", generateMailData(document.getId()));
-
 			updateDocumentLastRevised(documentId);
 
 			return flagList;
