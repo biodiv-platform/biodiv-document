@@ -38,6 +38,8 @@ public class MailMetaDataConverter {
 		documentMailData.setAuthorId(mailData.getDocumentMailData().getAuthorId());
 		documentMailData.setCreatedOn(mailData.getDocumentMailData().getCreatedOn());
 		documentMailData.setDocumentId(mailData.getDocumentMailData().getDocumentId());
+		documentMailData.setTitle(mailData.getDocumentMailData().getTitle());
+
 
 		List<com.strandls.utility.pojo.UserGroupMailData> userGroupMeta = new ArrayList<com.strandls.utility.pojo.UserGroupMailData>();
 		for (UserGroupMailData userGroupData : mailData.getUserGroupData()) {
