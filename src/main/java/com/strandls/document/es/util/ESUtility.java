@@ -33,7 +33,7 @@ public class ESUtility {
 	private Logger logger = LoggerFactory.getLogger(ESUtility.class);
 
 	private List<Object> cSTSOT(String str) {
-		if (str == null || str == "" || str.isEmpty())
+		if (str == null || str.matches("") || str.isEmpty())
 			return new ArrayList<Object>();
 
 		String[] y = str.split(",");
