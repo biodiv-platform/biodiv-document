@@ -396,7 +396,9 @@ public class DocumentServiceImpl implements DocumentService {
 			objectMapper.setDateFormat(df);
 			String docString = objectMapper.writeValueAsString(res);
 			System.out.println("------------name finder process started-----------");
-			parsePdfWithGNFinder(ufile.getPath(), document.getId());
+			if(ufile != null) {
+				parsePdfWithGNFinder(ufile.getPath(), document.getId());
+			}
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
