@@ -97,6 +97,7 @@ import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.esmodule.pojo.MapQueryResponse.ResultEnum;
+import com.strandls.esmodule.pojo.SpeciesGroup;
 import com.strandls.file.api.UploadApi;
 import com.strandls.file.model.FilesDTO;
 import com.strandls.geoentities.controllers.GeoentitiesServicesApi;
@@ -107,8 +108,6 @@ import com.strandls.resource.controllers.ResourceServicesApi;
 import com.strandls.resource.pojo.License;
 import com.strandls.resource.pojo.UFile;
 import com.strandls.resource.pojo.UFileCreateData;
-import com.strandls.taxonomy.controllers.SpeciesServicesApi;
-import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.user.controller.UserServiceApi;
 import com.strandls.user.pojo.Follow;
 import com.strandls.user.pojo.UserIbp;
@@ -191,9 +190,6 @@ public class DocumentServiceImpl implements DocumentService {
 
 	@Inject
 	private ActivitySerivceApi activityService;
-
-	@Inject
-	private SpeciesServicesApi speciesService;
 
 	@Inject
 	private GeoentitiesServicesApi geoEntitiesServices;
@@ -689,6 +685,7 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public String bulkUploadBibTex(HttpServletRequest request, InputStream uploadedInputStream,
 			FormDataContentDisposition fileDetail) {
@@ -743,7 +740,7 @@ public class DocumentServiceImpl implements DocumentService {
 			}
 
 //			get all speciesGroup
-			List<SpeciesGroup> speciesGroupList = speciesService.getAllSpeciesGroup();
+			List<SpeciesGroup> speciesGroupList = new ArrayList<>();
 			Map<String, Long> sGroupIdMap = new HashMap<String, Long>();
 			for (SpeciesGroup sGroup : speciesGroupList) {
 				sGroupIdMap.put(sGroup.getName(), sGroup.getId());
@@ -1151,17 +1148,6 @@ public class DocumentServiceImpl implements DocumentService {
 			logger.error(e.getMessage());
 		}
 
-	}
-
-	@Override
-	public List<SpeciesGroup> getAllSpeciesGroup() {
-		List<SpeciesGroup> result = null;
-		try {
-			result = speciesService.getAllSpeciesGroup();
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		}
-		return result;
 	}
 
 	@Override
