@@ -158,11 +158,11 @@ public class DocumentCreateData {
 		this.userGroupId = userGroupId;
 	}
 
-	public String getExternalURL() {
+	public String getExternalUrl() {
 		return externalUrl;
 	}
 
-	public void setExternalURL(String externalUrl) {
+	public void setExternalUrl(String externalUrl) {
 		this.externalUrl = externalUrl;
 	}
 
