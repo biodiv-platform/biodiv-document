@@ -331,7 +331,7 @@ public class DocumentServiceImpl implements DocumentService {
 					documentCreateData.getContribution(), new Date(), bibData.getDescription(), bibData.getDoi(),
 					new Date(), documentCreateData.getLicenseId(), bibData.getTitle(), bibData.getType(),
 					(ufile != null ? ufile.getId() : null), documentCreateData.getFromDate(),
-					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, null, 1, documentCreateData.getRating(),
+					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, documentCreateData.getExternalURL(), 1, documentCreateData.getRating(),
 					false, null, bibData.getAuthor(), bibData.getJournal(), bibData.getBooktitle(), bibData.getYear(),
 					bibData.getMonth(), bibData.getVolume(), bibData.getNumber(), bibData.getPages(),
 					bibData.getPublisher(), bibData.getSchool(), bibData.getEdition(), bibData.getSeries(),
@@ -436,7 +436,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 				DocumentEditData docEditData = new DocumentEditData(documentId, bibFieldData.getItemTypeId(),
 						document.getContributors(), document.getAttribution(), document.getLicenseId(),
-						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile);
+						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile ,document.getExternalUrl());
 				return docEditData;
 			}
 
@@ -574,6 +574,7 @@ public class DocumentServiceImpl implements DocumentService {
 				document.setItemtype(bibTexItemTypeDao.findById(docEditData.getItemTypeId()).getItemType());
 				document.setIsbn(bibData.getIsbn());
 				document.setExtra(bibData.getExtra());
+				document.setExternalUrl(docEditData.getExternalUrl());
 
 				documentDao.update(document);
 
