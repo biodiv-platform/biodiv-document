@@ -399,7 +399,7 @@ public class DocumentServiceImpl implements DocumentService {
 			if(ufile != null) {
 				parsePdfWithGNFinder(ufile.getPath(), document.getId());
 			}
-			if(documentCreateData.getExternalUrl()!=null) {
+			if(documentCreateData.getExternalUrl()!=null && documentCreateData.getExternalUrl().startsWith("http")) {
 				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
 			}
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
