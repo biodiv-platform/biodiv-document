@@ -399,6 +399,9 @@ public class DocumentServiceImpl implements DocumentService {
 			if(ufile != null) {
 				parsePdfWithGNFinder(ufile.getPath(), document.getId());
 			}
+			if(documentCreateData.getExternalUrl()!=null) {
+				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
+			}
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -1515,7 +1518,8 @@ public class DocumentServiceImpl implements DocumentService {
 
 		GNFinderResponseMap gnfinderresponse = null;
 		String basePath = properties.getProperty("baseDocPath");
-		String completeFileUrl = serverUrl + "/" + basePath + filePath;
+		// external URL scientific name parsing
+		String completeFileUrl = filePath.startsWith("http")?filePath:serverUrl + "/" + basePath + filePath;
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
