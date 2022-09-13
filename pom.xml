@@ -330,12 +330,6 @@
 		</dependency>
 		
 		<dependency>
-		    <groupId>com.strandls.biodiv</groupId>
-		    <artifactId>taxonomy-client</artifactId>
-		    <version>1.0.0</version>
-		</dependency>
-
-		<dependency>
 			<groupId>biodiv</groupId>
 			<artifactId>file-upload-client</artifactId>
 			<version>1.0.0</version>
