@@ -31,7 +31,6 @@ import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.document.ApiConstants;
-import com.strandls.document.dao.DocSciNameDao;
 import com.strandls.document.es.util.ESUtility;
 import com.strandls.document.pojo.BibFieldsData;
 import com.strandls.document.pojo.BibTexItemType;
@@ -45,7 +44,6 @@ import com.strandls.document.pojo.DocumentMeta;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
 import com.strandls.document.pojo.GNFinderResponseMap;
-import com.strandls.document.pojo.GnFinderResponseNames;
 import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentListService;
@@ -56,7 +54,6 @@ import com.strandls.esmodule.pojo.MapGeoPoint;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchParams.SortTypeEnum;
 import com.strandls.esmodule.pojo.MapSearchQuery;
-import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.user.pojo.Follow;
 import com.strandls.userGroup.pojo.Featured;
 import com.strandls.userGroup.pojo.FeaturedCreate;
@@ -472,23 +469,6 @@ public class DocumentController {
 			@ApiParam(name = "tagsMapping") TagsMapping tagsMapping) {
 		try {
 			List<Tags> result = docService.updateTags(request, tagsMapping);
-			return Response.status(Status.OK).entity(result).build();
-		} catch (Exception e) {
-			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
-		}
-	}
-
-	@GET
-	@Path(ApiConstants.SPECIESGROUP + ApiConstants.ALL)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Get all the Specie Group", notes = "Returns all the Species Group", response = SpeciesGroup.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "Unable to fetch the UserGroup", response = String.class) })
-
-	public Response getAllSpecies() {
-		try {
-			List<SpeciesGroup> result = docService.getAllSpeciesGroup();
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

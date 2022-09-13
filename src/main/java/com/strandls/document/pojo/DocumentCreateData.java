@@ -43,6 +43,9 @@ public class DocumentCreateData {
 //	-----User Group Data-----
 	private List<Long> userGroupId;
 
+//	-----External URL-----
+	private String externalUrl;
+
 	public String getContribution() {
 		return contribution;
 	}
@@ -153,6 +156,14 @@ public class DocumentCreateData {
 
 	public void setUserGroupId(List<Long> userGroupId) {
 		this.userGroupId = userGroupId;
+	}
+
+	public String getExternalUrl() {
+		return externalUrl;
+	}
+
+	public void setExternalUrl(String externalUrl) {
+		this.externalUrl = externalUrl;
 	}
 
 }

@@ -97,6 +97,7 @@ import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.esmodule.pojo.MapQueryResponse.ResultEnum;
+import com.strandls.esmodule.pojo.SpeciesGroup;
 import com.strandls.file.api.UploadApi;
 import com.strandls.file.model.FilesDTO;
 import com.strandls.geoentities.controllers.GeoentitiesServicesApi;
@@ -107,8 +108,6 @@ import com.strandls.resource.controllers.ResourceServicesApi;
 import com.strandls.resource.pojo.License;
 import com.strandls.resource.pojo.UFile;
 import com.strandls.resource.pojo.UFileCreateData;
-import com.strandls.taxonomy.controllers.SpeciesServicesApi;
-import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.user.controller.UserServiceApi;
 import com.strandls.user.pojo.Follow;
 import com.strandls.user.pojo.UserIbp;
@@ -191,9 +190,6 @@ public class DocumentServiceImpl implements DocumentService {
 
 	@Inject
 	private ActivitySerivceApi activityService;
-
-	@Inject
-	private SpeciesServicesApi speciesService;
 
 	@Inject
 	private GeoentitiesServicesApi geoEntitiesServices;
@@ -331,7 +327,7 @@ public class DocumentServiceImpl implements DocumentService {
 					documentCreateData.getContribution(), new Date(), bibData.getDescription(), bibData.getDoi(),
 					new Date(), documentCreateData.getLicenseId(), bibData.getTitle(), bibData.getType(),
 					(ufile != null ? ufile.getId() : null), documentCreateData.getFromDate(),
-					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, null, 1, documentCreateData.getRating(),
+					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, documentCreateData.getExternalUrl(), 1, documentCreateData.getRating(),
 					false, null, bibData.getAuthor(), bibData.getJournal(), bibData.getBooktitle(), bibData.getYear(),
 					bibData.getMonth(), bibData.getVolume(), bibData.getNumber(), bibData.getPages(),
 					bibData.getPublisher(), bibData.getSchool(), bibData.getEdition(), bibData.getSeries(),
@@ -399,6 +395,9 @@ public class DocumentServiceImpl implements DocumentService {
 			if(ufile != null) {
 				parsePdfWithGNFinder(ufile.getPath(), document.getId());
 			}
+			if(documentCreateData.getExternalUrl()!=null && documentCreateData.getExternalUrl().startsWith("http")) {
+				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
+			}
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -436,7 +435,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 				DocumentEditData docEditData = new DocumentEditData(documentId, bibFieldData.getItemTypeId(),
 						document.getContributors(), document.getAttribution(), document.getLicenseId(),
-						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile);
+						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile ,document.getExternalUrl());
 				return docEditData;
 			}
 
@@ -574,6 +573,7 @@ public class DocumentServiceImpl implements DocumentService {
 				document.setItemtype(bibTexItemTypeDao.findById(docEditData.getItemTypeId()).getItemType());
 				document.setIsbn(bibData.getIsbn());
 				document.setExtra(bibData.getExtra());
+				document.setExternalUrl(docEditData.getExternalUrl());
 
 				documentDao.update(document);
 
@@ -689,6 +689,7 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public String bulkUploadBibTex(HttpServletRequest request, InputStream uploadedInputStream,
 			FormDataContentDisposition fileDetail) {
@@ -743,7 +744,7 @@ public class DocumentServiceImpl implements DocumentService {
 			}
 
 //			get all speciesGroup
-			List<SpeciesGroup> speciesGroupList = speciesService.getAllSpeciesGroup();
+			List<SpeciesGroup> speciesGroupList = new ArrayList<>();
 			Map<String, Long> sGroupIdMap = new HashMap<String, Long>();
 			for (SpeciesGroup sGroup : speciesGroupList) {
 				sGroupIdMap.put(sGroup.getName(), sGroup.getId());
@@ -1154,17 +1155,6 @@ public class DocumentServiceImpl implements DocumentService {
 	}
 
 	@Override
-	public List<SpeciesGroup> getAllSpeciesGroup() {
-		List<SpeciesGroup> result = null;
-		try {
-			result = speciesService.getAllSpeciesGroup();
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		}
-		return result;
-	}
-
-	@Override
 	public List<Habitat> getAllHabitat() {
 		try {
 			List<Habitat> result = utilityService.getAllHabitat();
@@ -1514,7 +1504,8 @@ public class DocumentServiceImpl implements DocumentService {
 
 		GNFinderResponseMap gnfinderresponse = null;
 		String basePath = properties.getProperty("baseDocPath");
-		String completeFileUrl = serverUrl + "/" + basePath + filePath;
+		// external URL scientific name parsing
+		String completeFileUrl = filePath.startsWith("http")?filePath:serverUrl + "/" + basePath + filePath;
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);

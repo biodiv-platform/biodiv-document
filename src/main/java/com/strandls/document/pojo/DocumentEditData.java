@@ -6,12 +6,14 @@ package com.strandls.document.pojo;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.strandls.resource.pojo.UFile;
 
 /**
  * @author Abhishek Rudra
  *
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DocumentEditData {
 
 	private Long documentId;
@@ -24,6 +26,7 @@ public class DocumentEditData {
 	private BibFieldsData bibFieldData;
 	private List<DocumentCoverage> docCoverage;
 	private UFile ufileData;
+	private String externalUrl;
 
 	/**
 	 * 
@@ -43,10 +46,11 @@ public class DocumentEditData {
 	 * @param bibFieldData
 	 * @param docCoverage
 	 * @param ufileData
+	 * @param externalUrl
 	 */
 	public DocumentEditData(Long documentId, Long itemTypeId, String contribution, String attribution, Long licenseId,
 			Date fromDate, Integer rating, BibFieldsData bibFieldData, List<DocumentCoverage> docCoverage,
-			UFile ufileData) {
+			UFile ufileData ,String externalUrl) {
 		super();
 		this.documentId = documentId;
 		this.itemTypeId = itemTypeId;
@@ -58,6 +62,7 @@ public class DocumentEditData {
 		this.bibFieldData = bibFieldData;
 		this.docCoverage = docCoverage;
 		this.ufileData = ufileData;
+		this.externalUrl = externalUrl;
 	}
 
 	public Long getDocumentId() {
@@ -138,6 +143,14 @@ public class DocumentEditData {
 
 	public void setUfileData(UFile ufileData) {
 		this.ufileData = ufileData;
+	}
+
+	public String getExternalUrl() {
+		return externalUrl;
+	}
+
+	public void setExternalUrl(String externalUrl) {
+		this.externalUrl = externalUrl;
 	}
 
 }

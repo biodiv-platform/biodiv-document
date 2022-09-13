@@ -25,7 +25,6 @@ import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
 import com.strandls.document.pojo.GNFinderResponseMap;
 import com.strandls.document.pojo.ShowDocument;
-import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.user.pojo.Follow;
 import com.strandls.userGroup.pojo.Featured;
 import com.strandls.userGroup.pojo.FeaturedCreate;
@@ -72,7 +71,6 @@ public interface DocumentService {
 
 	public Activity addDocumentComment(HttpServletRequest request, CommentLoggingData loggingData);
 
-	public List<SpeciesGroup> getAllSpeciesGroup();
 
 	public List<Long> updateSpeciesGroup(HttpServletRequest request, Long documentId, List<Long> speciesGroupList);
 
