@@ -1137,9 +1137,8 @@ public class DocumentServiceImpl implements DocumentService {
 			comment.setMailData(generateMailData(comment.getRootHolderId()));
 			activityService = headers.addActivityHeaders(activityService, request.getHeader(HttpHeaders.AUTHORIZATION));
 
-			Activity result = activityService.deleteComment("document", commentId, comment);
+			return activityService.deleteComment("document", commentId, comment);
 
-			return null;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
