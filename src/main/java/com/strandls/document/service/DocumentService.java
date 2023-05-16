@@ -71,7 +71,6 @@ public interface DocumentService {
 
 	public Activity addDocumentComment(HttpServletRequest request, CommentLoggingData loggingData);
 
-
 	public List<Long> updateSpeciesGroup(HttpServletRequest request, Long documentId, List<Long> speciesGroupList);
 
 	public List<Habitat> getAllHabitat();
@@ -107,5 +106,7 @@ public interface DocumentService {
 	public List<DocSciName> getNamesByDocumentId(Long documentId, Integer offset);
 
 	public DocSciName updateScienticNametoIsDeleted(HttpServletRequest request, Long id);
+
+	public Activity removeDocumentComment(HttpServletRequest request, CommentLoggingData comment, String commentId);
 
 }
