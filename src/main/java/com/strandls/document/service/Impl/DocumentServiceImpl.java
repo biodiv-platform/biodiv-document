@@ -327,14 +327,14 @@ public class DocumentServiceImpl implements DocumentService {
 					documentCreateData.getContribution(), new Date(), bibData.getDescription(), bibData.getDoi(),
 					new Date(), documentCreateData.getLicenseId(), bibData.getTitle(), bibData.getType(),
 					(ufile != null ? ufile.getId() : null), documentCreateData.getFromDate(),
-					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, documentCreateData.getExternalUrl(), 1, documentCreateData.getRating(),
-					false, null, bibData.getAuthor(), bibData.getJournal(), bibData.getBooktitle(), bibData.getYear(),
-					bibData.getMonth(), bibData.getVolume(), bibData.getNumber(), bibData.getPages(),
-					bibData.getPublisher(), bibData.getSchool(), bibData.getEdition(), bibData.getSeries(),
-					bibData.getAddress(), bibData.getChapter(), bibData.getNote(), bibData.getEditor(),
-					bibData.getOrganization(), bibData.getHowpublished(), bibData.getInstitution(), bibData.getUrl(),
-					bibData.getLanguage(), bibData.getFile(), bibData.getItemtype(), bibData.getIsbn(),
-					bibData.getExtra());
+					documentCreateData.getFromDate(), 0, 0, defaultLanguageId, documentCreateData.getExternalUrl(), 1,
+					documentCreateData.getRating(), false, null, bibData.getAuthor(), bibData.getJournal(),
+					bibData.getBooktitle(), bibData.getYear(), bibData.getMonth(), bibData.getVolume(),
+					bibData.getNumber(), bibData.getPages(), bibData.getPublisher(), bibData.getSchool(),
+					bibData.getEdition(), bibData.getSeries(), bibData.getAddress(), bibData.getChapter(),
+					bibData.getNote(), bibData.getEditor(), bibData.getOrganization(), bibData.getHowpublished(),
+					bibData.getInstitution(), bibData.getUrl(), bibData.getLanguage(), bibData.getFile(),
+					bibData.getItemtype(), bibData.getIsbn(), bibData.getExtra());
 
 			document = documentDao.save(document);
 
@@ -392,10 +392,10 @@ public class DocumentServiceImpl implements DocumentService {
 			objectMapper.setDateFormat(df);
 			String docString = objectMapper.writeValueAsString(res);
 			System.out.println("------------name finder process started-----------");
-			if(ufile != null) {
+			if (ufile != null) {
 				parsePdfWithGNFinder(ufile.getPath(), document.getId());
 			}
-			if(documentCreateData.getExternalUrl()!=null && documentCreateData.getExternalUrl().startsWith("http")) {
+			if (documentCreateData.getExternalUrl() != null && documentCreateData.getExternalUrl().startsWith("http")) {
 				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
 			}
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
@@ -435,7 +435,8 @@ public class DocumentServiceImpl implements DocumentService {
 
 				DocumentEditData docEditData = new DocumentEditData(documentId, bibFieldData.getItemTypeId(),
 						document.getContributors(), document.getAttribution(), document.getLicenseId(),
-						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile ,document.getExternalUrl());
+						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile,
+						document.getExternalUrl());
 				return docEditData;
 			}
 
@@ -1130,6 +1131,20 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 	}
 
+	@Override
+	public Activity removeDocumentComment(HttpServletRequest request, CommentLoggingData comment, String commentId) {
+		try {
+			comment.setMailData(generateMailData(comment.getRootHolderId()));
+			activityService = headers.addActivityHeaders(activityService, request.getHeader(HttpHeaders.AUTHORIZATION));
+
+			return activityService.deleteComment("document", commentId, comment);
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+	}
+
 	private void updateDocumentLastRevised(Long documentId) {
 		Document document = documentDao.findById(documentId);
 		document.setLastRevised(new Date());
@@ -1505,7 +1520,7 @@ public class DocumentServiceImpl implements DocumentService {
 		GNFinderResponseMap gnfinderresponse = null;
 		String basePath = properties.getProperty("baseDocPath");
 		// external URL scientific name parsing
-		String completeFileUrl = filePath.startsWith("http")?filePath:serverUrl + "/" + basePath + filePath;
+		String completeFileUrl = filePath.startsWith("http") ? filePath : serverUrl + "/" + basePath + filePath;
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
