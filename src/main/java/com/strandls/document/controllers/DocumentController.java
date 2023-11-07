@@ -95,6 +95,7 @@ public class DocumentController {
 
 	public Response getPong() {
 		return Response.status(Status.OK).entity("PONG").build();
+		//comment added to test jdk upgrade for sonar
 	}
 
 	@PUT
