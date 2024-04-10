@@ -116,6 +116,18 @@ public class DocumentHelper {
 					return null;
 			}
 
+			String documentSocialPreview = null;
+			if (fieldMapping.containsKey("documentSocialPreview")) {
+				Cell cell = dataRow.getCell(fieldMapping.get("documentSocialPreview"),
+						MissingCellPolicy.RETURN_BLANK_AS_NULL);
+				if (cell != null) {
+					cell.setCellType(CellType.STRING);
+					title = cell.getStringCellValue();
+				}
+				if (cell == null)
+					return null;
+			}
+
 			String type = null;
 			if (fieldMapping.containsKey("type")) {
 				Cell cell = dataRow.getCell(fieldMapping.get("type"), MissingCellPolicy.RETURN_BLANK_AS_NULL);
@@ -364,10 +376,11 @@ public class DocumentHelper {
 
 			document = new Document(null, true, attribution, authorId, contributors, new Date(), notes, doi, new Date(),
 					Long.parseLong(fieldMapping.get("licenseId").toString()), title, type,
-					(ufile != null ? ufile.getId() : null), new Date(), new Date(), 0, 0, defaultLanguageId, null,
-					1, (rating != null) ? Integer.parseInt(rating) : 0, false, null, authors, journal, bookTitle, year,
+					(ufile != null ? ufile.getId() : null), new Date(), new Date(), 0, 0, defaultLanguageId, null, 1,
+					(rating != null) ? Integer.parseInt(rating) : 0, false, null, authors, journal, bookTitle, year,
 					month, volume, number, pages, publisher, school, edition, series, address, chapter, note, editor,
-					organization, howPublished, institution, url, language, file, itemtype, isbn, extra);
+					organization, howPublished, institution, url, language, file, itemtype, isbn, extra,
+					documentSocialPreview);
 
 			return document;
 		} catch (Exception e) {

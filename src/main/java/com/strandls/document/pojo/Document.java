@@ -13,6 +13,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Type;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -634,6 +636,7 @@ public class Document implements Serializable {
 	}
 
 	@Column(name = "document_social_preview")
+	@Type(type = "text")
 	public String getDocumentSocialPreview() {
 		return documentSocialPreview;
 	}
