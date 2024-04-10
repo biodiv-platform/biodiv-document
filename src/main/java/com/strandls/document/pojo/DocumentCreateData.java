@@ -46,6 +46,9 @@ public class DocumentCreateData {
 //	-----External URL-----
 	private String externalUrl;
 
+//	-----Document Social Preview-----
+	private String documentSocialPreview;
+
 	public String getContribution() {
 		return contribution;
 	}
@@ -164,6 +167,14 @@ public class DocumentCreateData {
 
 	public void setExternalUrl(String externalUrl) {
 		this.externalUrl = externalUrl;
+	}
+
+	public String getDocumentSocialPreview() {
+		return documentSocialPreview;
+	}
+
+	public void setDocumentSocialPreview(String documentSocialPreview) {
+		this.documentSocialPreview = documentSocialPreview;
 	}
 
 }

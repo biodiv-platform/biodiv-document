@@ -334,7 +334,8 @@ public class DocumentServiceImpl implements DocumentService {
 					bibData.getEdition(), bibData.getSeries(), bibData.getAddress(), bibData.getChapter(),
 					bibData.getNote(), bibData.getEditor(), bibData.getOrganization(), bibData.getHowpublished(),
 					bibData.getInstitution(), bibData.getUrl(), bibData.getLanguage(), bibData.getFile(),
-					bibData.getItemtype(), bibData.getIsbn(), bibData.getExtra());
+					bibData.getItemtype(), bibData.getIsbn(), bibData.getExtra(),
+					documentCreateData.getDocumentSocialPreview());
 
 			document = documentDao.save(document);
 
@@ -436,7 +437,7 @@ public class DocumentServiceImpl implements DocumentService {
 				DocumentEditData docEditData = new DocumentEditData(documentId, bibFieldData.getItemTypeId(),
 						document.getContributors(), document.getAttribution(), document.getLicenseId(),
 						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile,
-						document.getExternalUrl());
+						document.getExternalUrl(), document.getDocumentSocialPreview());
 				return docEditData;
 			}
 
@@ -575,6 +576,7 @@ public class DocumentServiceImpl implements DocumentService {
 				document.setIsbn(bibData.getIsbn());
 				document.setExtra(bibData.getExtra());
 				document.setExternalUrl(docEditData.getExternalUrl());
+				document.setDocumentSocialPreview(docEditData.getDocumentSocialPreview());
 
 				documentDao.update(document);
 

@@ -27,6 +27,7 @@ public class DocumentEditData {
 	private List<DocumentCoverage> docCoverage;
 	private UFile ufileData;
 	private String externalUrl;
+	private String documentSocialPreview;
 
 	/**
 	 * 
@@ -47,10 +48,11 @@ public class DocumentEditData {
 	 * @param docCoverage
 	 * @param ufileData
 	 * @param externalUrl
+	 * @param documentSocialPreview
 	 */
 	public DocumentEditData(Long documentId, Long itemTypeId, String contribution, String attribution, Long licenseId,
 			Date fromDate, Integer rating, BibFieldsData bibFieldData, List<DocumentCoverage> docCoverage,
-			UFile ufileData ,String externalUrl) {
+			UFile ufileData, String externalUrl, String documentSocialPreview) {
 		super();
 		this.documentId = documentId;
 		this.itemTypeId = itemTypeId;
@@ -63,6 +65,7 @@ public class DocumentEditData {
 		this.docCoverage = docCoverage;
 		this.ufileData = ufileData;
 		this.externalUrl = externalUrl;
+		this.documentSocialPreview = documentSocialPreview;
 	}
 
 	public Long getDocumentId() {
@@ -151,6 +154,14 @@ public class DocumentEditData {
 
 	public void setExternalUrl(String externalUrl) {
 		this.externalUrl = externalUrl;
+	}
+
+	public String getDocumentSocialPreview() {
+		return documentSocialPreview;
+	}
+
+	public void setDocumentSocialPreview(String documentSocialPreview) {
+		this.documentSocialPreview = documentSocialPreview;
 	}
 
 }
