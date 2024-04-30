@@ -224,6 +224,13 @@ public class DocumentServiceImpl implements DocumentService {
 	private Long defaultLanguageId = Long
 			.parseLong(PropertyFileUtil.fetchProperty("config.properties", "defaultLanguageId"));
 
+	private Boolean restricted = Boolean
+			.parseBoolean(PropertyFileUtil.fetchProperty("config.properties", "restricted"));
+
+	private static final String ROLE_ADMIN = "ROLE_ADMIN";
+
+	private static final String ROLES = "roles";
+
 	@Override
 	public ShowDocument show(Long documentId) {
 		try {
@@ -290,6 +297,12 @@ public class DocumentServiceImpl implements DocumentService {
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			Long authorId = Long.parseLong(profile.getId());
+			JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
+
+			if (!roles.contains("ROLE_DOCUMENT_CONTRIBUTOR") && !roles.contains(ROLE_ADMIN)
+					&& Boolean.TRUE.equals(restricted)) {
+				return null;
+			}
 
 			UFile ufile = null;
 			if (documentCreateData.getResourceURL() != null && documentCreateData.getSize() != null) {
@@ -334,7 +347,8 @@ public class DocumentServiceImpl implements DocumentService {
 					bibData.getEdition(), bibData.getSeries(), bibData.getAddress(), bibData.getChapter(),
 					bibData.getNote(), bibData.getEditor(), bibData.getOrganization(), bibData.getHowpublished(),
 					bibData.getInstitution(), bibData.getUrl(), bibData.getLanguage(), bibData.getFile(),
-					bibData.getItemtype(), bibData.getIsbn(), bibData.getExtra());
+					bibData.getItemtype(), bibData.getIsbn(), bibData.getExtra(),
+					documentCreateData.getDocumentSocialPreview());
 
 			document = documentDao.save(document);
 
@@ -417,12 +431,12 @@ public class DocumentServiceImpl implements DocumentService {
 
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			Long userId = Long.parseLong(profile.getId());
-			JSONArray roles = (JSONArray) profile.getAttribute("roles");
+			JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
 
 			Document document = documentDao.findById(documentId);
 			BibFieldsData bibFieldData = docHelper.convertDocumentToBibField(document);
 
-			if (roles.contains("ROLE_ADMIN") || userId.equals(document.getAuthorId())) {
+			if (roles.contains(ROLE_ADMIN) || userId.equals(document.getAuthorId())) {
 				List<DocumentCoverage> docCoverages = docCoverageDao.findByDocumentId(documentId);
 				for (DocumentCoverage docCoverage : docCoverages) {
 					WKTWriter writer = new WKTWriter();
@@ -436,7 +450,7 @@ public class DocumentServiceImpl implements DocumentService {
 				DocumentEditData docEditData = new DocumentEditData(documentId, bibFieldData.getItemTypeId(),
 						document.getContributors(), document.getAttribution(), document.getLicenseId(),
 						document.getFromDate(), document.getRating(), bibFieldData, docCoverages, ufile,
-						document.getExternalUrl());
+						document.getExternalUrl(), document.getDocumentSocialPreview());
 				return docEditData;
 			}
 
@@ -452,10 +466,10 @@ public class DocumentServiceImpl implements DocumentService {
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			Long userId = Long.parseLong(profile.getId());
-			JSONArray roles = (JSONArray) profile.getAttribute("roles");
+			JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
 			Document document = documentDao.findById(docEditData.getDocumentId());
 
-			if (roles.contains("ROLE_ADMIN") || userId.equals(document.getAuthorId())) {
+			if (roles.contains(ROLE_ADMIN) || userId.equals(document.getAuthorId())) {
 
 //				ufile update 
 				UFile ufile = docEditData.getUfileData();
@@ -575,6 +589,7 @@ public class DocumentServiceImpl implements DocumentService {
 				document.setIsbn(bibData.getIsbn());
 				document.setExtra(bibData.getExtra());
 				document.setExternalUrl(docEditData.getExternalUrl());
+				document.setDocumentSocialPreview(docEditData.getDocumentSocialPreview());
 
 				documentDao.update(document);
 
@@ -630,7 +645,7 @@ public class DocumentServiceImpl implements DocumentService {
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			Long userId = Long.parseLong(profile.getId());
-			JSONArray userRoles = (JSONArray) profile.getAttribute("roles");
+			JSONArray userRoles = (JSONArray) profile.getAttribute(ROLES);
 			Document document = documentDao.findById(documentId);
 
 			MapQueryResponse esResponse;
@@ -641,7 +656,7 @@ public class DocumentServiceImpl implements DocumentService {
 			ResultEnum result = esResponse.getResult();
 
 			if (result.getValue().equals("DELETED")
-					|| (document.getAuthorId().equals(userId) || userRoles.contains("ROLE_ADMIN"))) {
+					|| (document.getAuthorId().equals(userId) || userRoles.contains(ROLE_ADMIN))) {
 				document.setIsDeleted(true);
 				documentDao.update(document);
 				System.out.print("===deleted docuemnt===" + documentId + "returned" + result.getValue());
@@ -1326,8 +1341,8 @@ public class DocumentServiceImpl implements DocumentService {
 			ugService = headers.addUserGroupHeader(ugService, request.getHeader(HttpHeaders.AUTHORIZATION));
 			UserGroupPermissions userGroupPermission = ugService.getUserGroupPermission();
 
-			JSONArray userRole = (JSONArray) profile.getAttribute("roles");
-			if (userRole.contains("ROLE_ADMIN")) {
+			JSONArray userRole = (JSONArray) profile.getAttribute(ROLES);
+			if (userRole.contains(ROLE_ADMIN)) {
 
 				allowedUserGroup = ugService.getAllUserGroup();
 				for (UserGroupIbp ug : allowedUserGroup) {
@@ -1372,8 +1387,8 @@ public class DocumentServiceImpl implements DocumentService {
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			List<UserGroupIbp> allowedUserGroup = null;
-			JSONArray userRole = (JSONArray) profile.getAttribute("roles");
-			if (userRole.contains("ROLE_ADMIN")) {
+			JSONArray userRole = (JSONArray) profile.getAttribute(ROLES);
+			if (userRole.contains(ROLE_ADMIN)) {
 				allowedUserGroup = ugService.getAllUserGroup();
 			} else {
 
@@ -1628,14 +1643,14 @@ public class DocumentServiceImpl implements DocumentService {
 
 		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 		Long userId = Long.parseLong(profile.getId());
-		JSONArray roles = (JSONArray) profile.getAttribute("roles");
+		JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
 
 		DocSciName scientifNameDetails = docSciNameDao.findById(id);
 		Document documentDetails = documentDao.findById(scientifNameDetails.getDocumentId());
 
 		Long authorId = documentDetails.getAuthorId();
 
-		if (roles.contains("ROLE_ADMIN") || userId.equals(authorId)) {
+		if (roles.contains(ROLE_ADMIN) || userId.equals(authorId)) {
 
 			DocSciName updatedName;
 			DocSciName existingName = docSciNameDao.findById(id);

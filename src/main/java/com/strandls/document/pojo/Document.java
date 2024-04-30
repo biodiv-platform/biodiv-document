@@ -13,6 +13,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Type;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -79,6 +81,7 @@ public class Document implements Serializable {
 	private String itemtype;
 	private String isbn;
 	private String extra;
+	private String documentSocialPreview;
 
 	/**
 	 * 
@@ -136,6 +139,7 @@ public class Document implements Serializable {
 	 * @param itemtype
 	 * @param isbn
 	 * @param extra
+	 * @param documentSocialPreview
 	 */
 	public Document(Long id, Boolean agreeTerms, String attribution, Long authorId, String contributors, Date createdOn,
 			String notes, String doi, Date lastRevised, Long licenseId, String title, String type, Long uFileId,
@@ -144,7 +148,7 @@ public class Document implements Serializable {
 			String bookTitle, String year, String month, String volume, String number, String pages, String publisher,
 			String school, String edition, String series, String address, String chapter, String note, String editor,
 			String organization, String howPublished, String institution, String url, String language, String file,
-			String itemtype, String isbn, String extra) {
+			String itemtype, String isbn, String extra, String documentSocialPreview) {
 		super();
 		this.id = id;
 		this.agreeTerms = agreeTerms;
@@ -194,6 +198,7 @@ public class Document implements Serializable {
 		this.itemtype = itemtype;
 		this.isbn = isbn;
 		this.extra = extra;
+		this.documentSocialPreview = documentSocialPreview;
 	}
 
 	@Id
@@ -628,6 +633,16 @@ public class Document implements Serializable {
 
 	public void setIsbn(String isbn) {
 		this.isbn = isbn;
+	}
+
+	@Column(name = "document_social_preview")
+	@Type(type = "text")
+	public String getDocumentSocialPreview() {
+		return documentSocialPreview;
+	}
+
+	public void setDocumentSocialPreview(String documentSocialPreview) {
+		this.documentSocialPreview = documentSocialPreview;
 	}
 
 }
