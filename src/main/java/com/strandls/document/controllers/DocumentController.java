@@ -173,7 +173,7 @@ public class DocumentController {
 		}
 	}
 
-	@POST
+	@PUT
 	@Path(ApiConstants.CREATE)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
