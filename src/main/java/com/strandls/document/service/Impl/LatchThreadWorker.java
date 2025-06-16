@@ -1,6 +1,5 @@
 package com.strandls.document.service.Impl;
 
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -13,7 +12,7 @@ import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.AggregationResponse;
 import com.strandls.esmodule.pojo.MapSearchQuery;
 
-/**	
+/**
  * 
  * @author vishnu
  *
@@ -49,7 +48,7 @@ public class LatchThreadWorker extends Thread {
 	 */
 	public LatchThreadWorker(String index, String type, String filter, String geoAggregationField,
 			MapSearchQuery searchQuery, Map<String, AggregationResponse> mapResponse, String namedAgg,
-			CountDownLatch latch, String geoShapeFilterField,EsServicesApi esService) {
+			CountDownLatch latch, String geoShapeFilterField, EsServicesApi esService) {
 		super();
 		this.index = index;
 		this.type = type;
@@ -61,22 +60,23 @@ public class LatchThreadWorker extends Thread {
 		this.latch = latch;
 		this.esService = esService;
 		this.geoShapeFilterField = geoShapeFilterField;
-		
+
 	}
 
 	@Override
 	public void run() {
 		try {
 			AggregationResponse response = esService.getAggregation(index, type, filter, geoAggregationField,
-					geoShapeFilterField,searchQuery);
+					geoShapeFilterField, searchQuery);
 			if (namedAgg != null && !namedAgg.isEmpty())
 				mapResponse.put(namedAgg, response);
 			else
 				mapResponse.put(filter, response);
 
-			latch.countDown();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
+		} finally {
+			latch.countDown();
 		}
 	}
 

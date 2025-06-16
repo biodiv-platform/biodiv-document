@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -41,6 +44,8 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 	@Inject
 	private ESUtility esUtility;
+	
+	private final ExecutorService executor = Executors.newFixedThreadPool(20);
 
 	@Override
 	public DocumentListData getDocumentList(String index, String type, String geoAggregationField,
@@ -80,9 +85,11 @@ public class DocumentListServiceImpl implements DocumentListService {
 			MapSearchQuery searchQuery, Map<String, AggregationResponse> mapResponse, CountDownLatch latch,
 			String geoShapeFilterField,String namedAgg) {
 
-		LatchThreadWorker worker = new LatchThreadWorker(index, type, filter, geoAggregationField, searchQuery,
-				mapResponse, namedAgg, latch, geoShapeFilterField,esService);
-		worker.start();
+//		LatchThreadWorker worker = new LatchThreadWorker(index, type, filter, geoAggregationField, searchQuery,
+//				mapResponse, namedAgg, latch, geoShapeFilterField,esService);
+		executor.submit(new LatchThreadWorker(index, type, filter, geoAggregationField, searchQuery,
+				mapResponse, namedAgg, latch, geoShapeFilterField,esService));
+		//worker.start();
 
 	}
 
@@ -179,11 +186,21 @@ public class DocumentListServiceImpl implements DocumentListService {
 			getAggregateLatch(index, type, "document.year.keyword", null, mapSearchQuery, mapAggResponse, latch,geoShapeFilterField,null);
 		}
 
+//		try {
+//			latch.await();
+//		} catch (Exception e) {
+//			logger.error(e.getMessage());
+//		}
 		try {
-			latch.await();
-		} catch (Exception e) {
-			logger.error(e.getMessage());
+		    if (!latch.await(30, TimeUnit.SECONDS)) {  // Timeout after 30s
+		        logger.warn("Timed out waiting for aggregations");
+		        // Handle partial results or fail fast
+		    }
+		} catch (InterruptedException e) {
+		    Thread.currentThread().interrupt();
+		    throw new RuntimeException("Aggregation interrupted", e);
 		}
+
 
 		aggregationResponse
 				.setGroupSpeciesName(mapAggResponse.get(DocumentIndex.SGROUP.getValue()).getGroupAggregation());
