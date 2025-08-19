@@ -52,7 +52,6 @@ public class ESUtility {
 
 	}
 
-	
 	private MapAndMatchPhraseQuery assignAndMatchPhrase(String key, String value) {
 		MapAndMatchPhraseQuery andMatchPhrase = new MapAndMatchPhraseQuery();
 		andMatchPhrase.setKey(key);

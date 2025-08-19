@@ -7,8 +7,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 
 import com.strandls.activity.pojo.Activity;
@@ -35,6 +33,8 @@ import com.strandls.utility.pojo.Habitat;
 import com.strandls.utility.pojo.Language;
 import com.strandls.utility.pojo.Tags;
 import com.strandls.utility.pojo.TagsMapping;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Abhishek Rudra

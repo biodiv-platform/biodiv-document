@@ -3,8 +3,6 @@
  */
 package com.strandls.document.dao;
 
-import javax.inject.Inject;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
@@ -12,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.strandls.document.pojo.Document;
 import com.strandls.document.util.AbstractDAO;
+
+import jakarta.inject.Inject;
 
 /**
  * @author Abhishek Rudra

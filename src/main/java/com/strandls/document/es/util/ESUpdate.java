@@ -1,11 +1,13 @@
 package com.strandls.document.es.util;
 
-import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapDocument;
 import com.strandls.esmodule.pojo.MapQueryResponse;
+
+import jakarta.inject.Inject;
 
 public class ESUpdate {
 
@@ -14,8 +16,7 @@ public class ESUpdate {
 	@Inject
 	private EsServicesApi esService;
 
-
-	public void updateESInstance(String documentId,String documentData) {
+	public void updateESInstance(String documentId, String documentData) {
 		try {
 			System.out.println("--------------------document es Update---------");
 			System.out.println();

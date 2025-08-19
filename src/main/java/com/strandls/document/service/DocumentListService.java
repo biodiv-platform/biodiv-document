@@ -14,7 +14,7 @@ public interface DocumentListService {
 	public MapAggregationResponse mapAggregate(String index, String type, String sGroup, String habitatIds, String tags,
 			String user, String flags, String createdOnMaxDate, String createdOnMinDate, String featured,
 			String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate, String state,
-			String itemType, String year, String author, String publisher, String title,
-			String geoShapeFilterField,MapSearchParams mapSearchParams);
+			String itemType, String year, String author, String publisher, String title, String geoShapeFilterField,
+			MapSearchParams mapSearchParams);
 
 }

@@ -5,11 +5,10 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class PropertyFileUtil {
 
 	private final static Logger logger = LoggerFactory.getLogger(PropertyFileUtil.class);
-	
+
 	public final static Properties fetchProperty(String fileName) {
 		Properties properties = new Properties();
 		try {

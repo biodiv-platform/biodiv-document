@@ -7,8 +7,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -21,6 +19,8 @@ import com.strandls.document.pojo.BibFieldsData;
 import com.strandls.document.pojo.Document;
 import com.strandls.document.util.PropertyFileUtil;
 import com.strandls.resource.pojo.UFile;
+
+import jakarta.inject.Inject;
 
 /**
  * @author Abhishek Rudra

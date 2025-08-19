@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.document;
 
@@ -20,8 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletContextEvent;
-
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -35,7 +33,7 @@ import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
 import com.rabbitmq.client.Channel;
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.document.controllers.DocumentControllerModule;
 import com.strandls.document.dao.DocumentDaoModule;
 import com.strandls.document.es.util.ESUtilModule;
@@ -47,9 +45,11 @@ import com.strandls.geoentities.controllers.GeoentitiesServicesApi;
 import com.strandls.landscape.controller.LandscapeApi;
 import com.strandls.resource.controllers.ResourceServicesApi;
 import com.strandls.user.controller.UserServiceApi;
-import com.strandls.userGroup.controller.UserGroupSerivceApi;
+import com.strandls.userGroup.controller.UserGroupServiceApi;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.PrecisionModel;
+
+import jakarta.servlet.ServletContextEvent;
 
 /**
  * @author Abhishek Rudra
@@ -95,7 +95,7 @@ public class DocumentServeletContextListener extends GuiceServletContextListener
 				bind(GeometryFactory.class).toInstance(geofactory);
 
 				Map<String, String> props = new HashMap<String, String>();
-				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
+				props.put("jakarta.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.provider.packages", "com");
 				props.put("jersey.config.server.wadl.disableWadl", "true");
 
@@ -106,12 +106,12 @@ public class DocumentServeletContextListener extends GuiceServletContextListener
 				bind(Headers.class).in(Scopes.SINGLETON);
 				bind(EsServicesApi.class).in(Scopes.SINGLETON);
 				bind(UserServiceApi.class).in(Scopes.SINGLETON);
-				bind(UserGroupSerivceApi.class).in(Scopes.SINGLETON);
+				bind(UserGroupServiceApi.class).in(Scopes.SINGLETON);
 				bind(ResourceServicesApi.class).in(Scopes.SINGLETON);
 				bind(GeoentitiesServicesApi.class).in(Scopes.SINGLETON);
-				bind(ActivitySerivceApi.class).in(Scopes.SINGLETON);
+				bind(ActivityServiceApi.class).in(Scopes.SINGLETON);
 				bind(UploadApi.class).in(Scopes.SINGLETON);
-				bind(ActivitySerivceApi.class).in(Scopes.SINGLETON);
+				bind(ActivityServiceApi.class).in(Scopes.SINGLETON);
 				bind(LandscapeApi.class).in(Scopes.SINGLETON);
 				bind(ServletContainer.class).in(Scopes.SINGLETON);
 
@@ -140,7 +140,7 @@ public class DocumentServeletContextListener extends GuiceServletContextListener
 			Annotation[] annotations = cls.getAnnotations();
 
 			for (Annotation annotation : annotations) {
-				if (annotation instanceof javax.persistence.Entity) {
+				if (annotation instanceof jakarta.persistence.Entity) {
 					System.out.println("Mapping entity :" + cls.getCanonicalName());
 					classes.add(cls);
 				}

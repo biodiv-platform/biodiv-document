@@ -43,8 +43,8 @@ public class ApiConstants {
 	public static final String UPLOAD = "/upload";
 	public static final String USERGROUP = "/usergroup";
 	public static final String V1 = "/v1";
-	public static final String GNRD="/gnfinder";
-	public static final String NAMES="/names";
-	public static final String DELETENAME="/deletename";
+	public static final String GNRD = "/gnfinder";
+	public static final String NAMES = "/names";
+	public static final String DELETENAME = "/deletename";
 
 }

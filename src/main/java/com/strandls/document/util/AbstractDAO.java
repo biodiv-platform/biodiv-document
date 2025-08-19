@@ -2,137 +2,101 @@ package com.strandls.document.util;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.NoResultException;
-
-import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
-public abstract class AbstractDAO<T, K extends Serializable> {
-	
-	protected SessionFactory sessionFactory;
+import jakarta.persistence.NoResultException;
 
-	protected Class<? extends T> daoType;
+public abstract class AbstractDAO<T, K extends Serializable> {
+
+	protected final SessionFactory sessionFactory;
+	protected final Class<T> daoType;
 
 	@SuppressWarnings("unchecked")
-	protected AbstractDAO(SessionFactory sessionFactory){
-		daoType = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+	protected AbstractDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
+		this.daoType = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
 	public T save(T entity) {
-		Session session = sessionFactory.openSession();
-		Transaction tx = null;
-		try {
-			tx = session.beginTransaction();
+		return executeInTransaction(session -> {
 			session.save(entity);
-			tx.commit();
-		} catch (Exception e) {
-			if (tx != null)
-				tx.rollback();
-			throw e;
-		} finally {
-			session.close();
-		}
-		return entity;
+			return entity;
+		});
 	}
 
 	public T update(T entity) {
-		Session session = sessionFactory.openSession();
-		Transaction tx = null;
-		try {
-			tx = session.beginTransaction();
+		return executeInTransaction(session -> {
 			session.update(entity);
-			tx.commit();
-		} catch (Exception e) {
-			if (tx != null)
-				tx.rollback();
-			throw e;
-		} finally {
-			session.close();
-		}
-		return entity;
+			return entity;
+		});
 	}
 
 	public T delete(T entity) {
-		Session session = sessionFactory.openSession();
-		Transaction tx = null;
-		try {
-			tx = session.beginTransaction();
+		return executeInTransaction(session -> {
 			session.delete(entity);
-			tx.commit();
-		} catch (Exception e) {
-			if (tx != null)
-				tx.rollback();
-			throw e;
-		} finally {
-			session.close();
-		}
-		return entity;
+			return entity;
+		});
 	}
 
 	public abstract T findById(K id);
 
-	@SuppressWarnings({ "unchecked", "deprecation" })
 	public List<T> findAll() {
-		Session session = sessionFactory.openSession();
-		Criteria criteria = session.createCriteria(daoType);
-		List<T> entities = criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY).list();
-		return entities;
+		try (Session session = sessionFactory.openSession()) {
+			String hql = "FROM " + daoType.getSimpleName();
+			return session.createQuery(hql, daoType).list();
+		}
 	}
 
-	@SuppressWarnings({ "unchecked", "deprecation" })
 	public List<T> findAll(int limit, int offset) {
-		Session session = sessionFactory.openSession();
-		Criteria criteria = session.createCriteria(daoType).setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
-		List<T> entities = criteria.setFirstResult(offset).setMaxResults(limit).list();
-		return entities;
+		try (Session session = sessionFactory.openSession()) {
+			String hql = "FROM " + daoType.getSimpleName();
+			return session.createQuery(hql, daoType).setFirstResult(offset).setMaxResults(limit).list();
+		}
 	}
 
-	// TODO:improve this to do dynamic finder on any property
-	@SuppressWarnings("unchecked")
-	public T findByPropertyWithCondition(String property, String value, String condition) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where t." + property + " " + condition
-				+ " :value";
-		Session session = sessionFactory.openSession();
-		Query<T> query = session.createQuery(queryStr);
-		query.setParameter("value", value);
-
-		T entity = null;
-		try {
-			entity = (T) query.getSingleResult();
+	public T findByPropertyWithCondition(String property, Object value, String condition) {
+		try (Session session = sessionFactory.openSession()) {
+			String hql = "FROM " + daoType.getSimpleName() + " t where t." + property + " " + condition + " :value";
+			Query<T> query = session.createQuery(hql, daoType);
+			query.setParameter("value", value);
+			return query.getSingleResult();
 		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	public List<T> getByPropertyWithCondition(String property, Object value, String condition, int limit, int offset) {
+		try (Session session = sessionFactory.openSession()) {
+			String hql = "FROM " + daoType.getSimpleName() + " t where t." + property + " " + condition
+					+ " :value order by t.id";
+			Query<T> query = session.createQuery(hql, daoType).setParameter("value", value).setFirstResult(offset)
+					.setMaxResults(limit);
+			return query.getResultList();
+		}
+	}
+
+	// Generic transaction execution wrapper
+	protected <R> R executeInTransaction(HibernateTransaction<R> action) {
+		Transaction tx = null;
+		try (Session session = sessionFactory.openSession()) {
+			tx = session.beginTransaction();
+			R result = action.execute(session);
+			tx.commit();
+			return result;
+		} catch (RuntimeException e) {
+			if (tx != null)
+				tx.rollback();
 			throw e;
 		}
-		session.close();
-		return entity;
-
 	}
 
-	@SuppressWarnings("unchecked")
-	public List<T> getByPropertyWithCondtion(String property, Object value, String condition, int limit, int offset) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where t." + property + " " + condition
-				+ " :value" + " order by id";
-		Session session = sessionFactory.openSession();
-		Query<T> query = session.createQuery(queryStr);
-		query.setParameter("value", value);
-
-		List<T> resultList = new ArrayList<T>();
-		try {
-			if (limit > 0 && offset >= 0)
-				query = query.setFirstResult(offset).setMaxResults(limit);
-			resultList = query.getResultList();
-
-		} catch (NoResultException e) {
-			throw e;
-		}
-		session.close();
-		return resultList;
+	@FunctionalInterface
+	public interface HibernateTransaction<R> {
+		R execute(Session session);
 	}
-
 }

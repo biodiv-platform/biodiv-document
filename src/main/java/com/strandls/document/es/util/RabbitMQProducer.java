@@ -5,11 +5,11 @@ package com.strandls.document.es.util;
 
 import java.io.IOException;
 
-import javax.inject.Inject;
-
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.strandls.document.util.PropertyFileUtil;
+
+import jakarta.inject.Inject;
 
 /**
  * 

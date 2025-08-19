@@ -1,6 +1,7 @@
 package com.strandls.document.pojo;
 
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.strandls.resource.pojo.UFile;
 import com.strandls.userGroup.pojo.Featured;
@@ -13,7 +14,7 @@ import com.strandls.utility.pojo.Tags;
 public class DocumentMappingList {
 
 	private Document document;
-	private List<DocumentCoverage> documentCoverages; 
+	private List<DocumentCoverage> documentCoverages;
 	private List<UserGroupIbp> userGroupIbp;
 	private List<Featured> featured;
 	private UFile uFile;
@@ -42,9 +43,9 @@ public class DocumentMappingList {
 	 * @param flag
 	 * @param tags
 	 */
-	public DocumentMappingList(Document document, List<DocumentCoverage> documentCoverages, List<UserGroupIbp> userGroupIbp,
-			List<Featured> featured, UserIbp userIbp, UFile uFile, List<Long> habitatIds, List<Long> speciesGroupIds,
-			List<Flag> flag, List<Tags> tags) {
+	public DocumentMappingList(Document document, List<DocumentCoverage> documentCoverages,
+			List<UserGroupIbp> userGroupIbp, List<Featured> featured, UserIbp userIbp, UFile uFile,
+			List<Long> habitatIds, List<Long> speciesGroupIds, List<Flag> flag, List<Tags> tags) {
 		super();
 		this.document = document;
 

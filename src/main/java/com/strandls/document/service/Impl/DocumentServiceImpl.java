@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.document.service.Impl;
 
@@ -21,10 +21,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -50,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.activity.pojo.DocumentMailData;
@@ -111,7 +107,7 @@ import com.strandls.resource.pojo.UFileCreateData;
 import com.strandls.user.controller.UserServiceApi;
 import com.strandls.user.pojo.Follow;
 import com.strandls.user.pojo.UserIbp;
-import com.strandls.userGroup.controller.UserGroupSerivceApi;
+import com.strandls.userGroup.controller.UserGroupServiceApi;
 import com.strandls.userGroup.pojo.Featured;
 import com.strandls.userGroup.pojo.FeaturedCreate;
 import com.strandls.userGroup.pojo.FeaturedCreateData;
@@ -136,6 +132,9 @@ import com.vividsolutions.jts.io.WKTReader;
 import com.vividsolutions.jts.io.WKTWriter;
 
 import de.undercouch.citeproc.bibtex.BibTeXConverter;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
 import net.minidev.json.JSONArray;
 
 /**
@@ -159,7 +158,7 @@ public class DocumentServiceImpl implements DocumentService {
 	private UserServiceApi userService;
 
 	@Inject
-	private UserGroupSerivceApi ugService;
+	private UserGroupServiceApi ugService;
 
 	@Inject
 	private UtilityServiceApi utilityService;
@@ -189,7 +188,7 @@ public class DocumentServiceImpl implements DocumentService {
 	private MailMetaDataConverter converter;
 
 	@Inject
-	private ActivitySerivceApi activityService;
+	private ActivityServiceApi activityService;
 
 	@Inject
 	private GeoentitiesServicesApi geoEntitiesServices;
@@ -315,7 +314,9 @@ public class DocumentServiceImpl implements DocumentService {
 				filesDto.setModule("DOCUMENT");
 
 				fileUpload = headers.addFileUploadHeader(fileUpload, request.getHeader(HttpHeaders.AUTHORIZATION));
-				Map<String, Object> fileResponse = fileUpload.moveFiles(filesDto);
+				String json = fileUpload.moveFiles(filesDto).getData().toString();
+				Map<String, Object> fileResponse = new ObjectMapper().readValue(json, new TypeReference<>() {
+				});
 
 				if (fileResponse != null && !fileResponse.isEmpty()) {
 					Map<String, String> files = (Map<String, String>) fileResponse
@@ -362,7 +363,7 @@ public class DocumentServiceImpl implements DocumentService {
 				docSGroupDao.save(docSGroup);
 			}
 
-//			habitat 
+//			habitat
 			for (Long habitatId : documentCreateData.getHabitatIds()) {
 				DocumentHabitat docHabitat = new DocumentHabitat(document.getId(), habitatId);
 				docHabitatDao.save(docHabitat);
@@ -471,7 +472,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 			if (roles.contains(ROLE_ADMIN) || userId.equals(document.getAuthorId())) {
 
-//				ufile update 
+//				ufile update
 				UFile ufile = docEditData.getUfileData();
 				if (ufile == null) {
 					Long ufileId = document.getuFileId();
@@ -500,7 +501,9 @@ public class DocumentServiceImpl implements DocumentService {
 					filesDto.setModule("DOCUMENT");
 
 					fileUpload = headers.addFileUploadHeader(fileUpload, request.getHeader(HttpHeaders.AUTHORIZATION));
-					Map<String, Object> fileResponse = fileUpload.moveFiles(filesDto);
+					String json = fileUpload.moveFiles(filesDto).getData().toString();
+					Map<String, Object> fileResponse = new ObjectMapper().readValue(json, new TypeReference<>() {
+					});
 
 					if (fileResponse != null && !fileResponse.isEmpty()) {
 						Map<String, String> files = (Map<String, String>) fileResponse.get(ufile.getPath());
@@ -539,7 +542,7 @@ public class DocumentServiceImpl implements DocumentService {
 						}
 						newCoveage.add(coverage.getId());
 					}
-//					remove the document 
+//					remove the document
 					for (DocumentCoverage previous : previousCoverage) {
 						if (!newCoveage.contains(previous.getId())) {
 							docCoverageDao.delete(previous);
@@ -615,7 +618,8 @@ public class DocumentServiceImpl implements DocumentService {
 			DocumentMailData documentMailData = new DocumentMailData();
 			Document document = documentDao.findById(documentId);
 			documentMailData.setAuthorId(document.getAuthorId());
-			documentMailData.setCreatedOn(document.getCreatedOn());
+			Date dt = document.getCreatedOn();
+			documentMailData.setCreatedOn(dt);
 			documentMailData.setDocumentId(documentId);
 			documentMailData.setTitle(document.getTitle());
 
@@ -779,7 +783,9 @@ public class DocumentServiceImpl implements DocumentService {
 			filesDto.setModule("DOCUMENT");
 
 			fileUpload = headers.addFileUploadHeader(fileUpload, request.getHeader(HttpHeaders.AUTHORIZATION));
-			Map<String, Object> allFiles = fileUpload.getAllFilePathsByUser(filesDto);
+			String json = fileUpload.getAllFilePathsByUser(filesDto).getData().toString();
+			Map<String, Object> allFiles = new ObjectMapper().readValue(json, new TypeReference<>() {
+			});
 
 			while (dataSheetIterator.hasNext()) {
 				Row dataRow = dataSheetIterator.next();
@@ -808,7 +814,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 						fileUpload = headers.addFileUploadHeader(fileUpload,
 								request.getHeader(HttpHeaders.AUTHORIZATION));
-						Map<String, Object> fileResponse = fileUpload.moveFiles(filesMoveDto);
+						Map<String, Object> fileResponse = fileUpload.moveFiles(filesMoveDto).getData();
 
 						System.out.println("file response : " + fileResponse);
 

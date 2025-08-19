@@ -3,15 +3,15 @@
  */
 package com.strandls.document.service.Impl;
 
-import javax.inject.Inject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.activity.pojo.DocumentActivityLogging;
 import com.strandls.activity.pojo.MailData;
 import com.strandls.document.Headers;
+
+import jakarta.inject.Inject;
 
 /**
  * @author Abhishek Rudra
@@ -22,7 +22,7 @@ public class LogActivities {
 	private final Logger logger = LoggerFactory.getLogger(LogActivities.class);
 
 	@Inject
-	private ActivitySerivceApi activityService;
+	private ActivityServiceApi activityService;
 
 	@Inject
 	private Headers headers;

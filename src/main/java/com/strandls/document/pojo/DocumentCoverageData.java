@@ -30,7 +30,8 @@ public class DocumentCoverageData {
 	 * @param topology
 	 * @param geoEntityId
 	 */
-	public DocumentCoverageData(Long id, Long documentId,Long landscapeIds,String placename, String topology, Long geoEntityId) {
+	public DocumentCoverageData(Long id, Long documentId, Long landscapeIds, String placename, String topology,
+			Long geoEntityId) {
 		super();
 		this.id = id;
 		this.documentId = documentId;

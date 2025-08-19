@@ -1,12 +1,17 @@
 package com.strandls.document.service.Impl;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.strandls.activity.pojo.UserGroupMailData;
 import com.strandls.utility.pojo.DocumentMailData;
 
 public class MailMetaDataConverter {
+	public Date convertToDate(OffsetDateTime odt) {
+		return odt == null ? null : Date.from(odt.toInstant());
+	}
 
 	public com.strandls.userGroup.pojo.MailData userGroupMetadata(com.strandls.activity.pojo.MailData mailData) {
 		com.strandls.userGroup.pojo.MailData metaData = new com.strandls.userGroup.pojo.MailData();
@@ -39,7 +44,6 @@ public class MailMetaDataConverter {
 		documentMailData.setCreatedOn(mailData.getDocumentMailData().getCreatedOn());
 		documentMailData.setDocumentId(mailData.getDocumentMailData().getDocumentId());
 		documentMailData.setTitle(mailData.getDocumentMailData().getTitle());
-
 
 		List<com.strandls.utility.pojo.UserGroupMailData> userGroupMeta = new ArrayList<com.strandls.utility.pojo.UserGroupMailData>();
 		for (UserGroupMailData userGroupData : mailData.getUserGroupData()) {

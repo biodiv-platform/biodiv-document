@@ -15,7 +15,7 @@ import com.strandls.document.service.DocumentService;
 public class DocumentServiceModule extends AbstractModule {
 
 	@Override
-	protected void configure() 	{
+	protected void configure() {
 		bind(DocumentService.class).to(DocumentServiceImpl.class).in(Scopes.SINGLETON);
 		bind(DocumentListService.class).to(DocumentListServiceImpl.class).in(Scopes.SINGLETON);
 		bind(MailMetaDataConverter.class).in(Scopes.SINGLETON);

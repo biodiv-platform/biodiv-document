@@ -3,11 +3,11 @@
  */
 package com.strandls.document.es.util;
 
-import javax.inject.Inject;
-
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
+
+import jakarta.inject.Inject;
 
 /**
  * 

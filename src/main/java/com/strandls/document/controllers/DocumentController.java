@@ -7,23 +7,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
@@ -65,18 +48,38 @@ import com.strandls.utility.pojo.Language;
 import com.strandls.utility.pojo.Tags;
 import com.strandls.utility.pojo.TagsMapping;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * @author Abhishek Rudra
  *
  */
 
-@Api("Document Service")
+@Tag(name = "Document Service", description = "APIs for managing document metadata and content")
 @Path(ApiConstants.V1 + ApiConstants.SERVICES)
 public class DocumentController {
 
@@ -92,7 +95,9 @@ public class DocumentController {
 	@GET
 	@Path(ApiConstants.PING)
 	@Produces(MediaType.TEXT_PLAIN)
-
+	@Operation(summary = "Ping check", description = "Service health endpoint")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Service is up", content = @Content(schema = @Schema(type = "string"))) })
 	public Response getPong() {
 		return Response.status(Status.OK).entity("PONG").build();
 	}
@@ -101,11 +106,10 @@ public class DocumentController {
 	@Path(ApiConstants.DELETENAME + "/{nameId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "delete scientific name detected for a document by gnfinder", notes = "returns the object with updated column", response = DocSciName.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
 	@ValidateUser
+	@Operation(summary = "Delete scientific name detected for a document by gnfinder", description = "Returns the object with updated column", responses = {
+			@ApiResponse(responseCode = "200", description = "Name deleted", content = @Content(schema = @Schema(implementation = DocSciName.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data", content = @Content(schema = @Schema(type = "string"))) })
 	public Response deleteScientificName(@Context HttpServletRequest request, @PathParam("nameId") Long nameId) {
 		try {
 			DocSciName response = docService.updateScienticNametoIsDeleted(request, nameId);
@@ -113,20 +117,17 @@ public class DocumentController {
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
-
 	}
 
 	@GET
 	@Path(ApiConstants.GNRD)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "detects scientific names in pdf files through gnfinder", notes = "returns the scientific names details detected by gnfinder", response = GNFinderResponseMap.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
+	@Operation(summary = "Detect scientific names in pdf files through gnfinder", description = "Returns the scientific names details detected by gnfinder", responses = {
+			@ApiResponse(responseCode = "200", description = "Scientific names detected", content = @Content(schema = @Schema(implementation = GNFinderResponseMap.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data", content = @Content(schema = @Schema(type = "string"))) })
 	public Response parsePdfWithGNFinder(@QueryParam("filePath") String filePath,
 			@QueryParam("documentId") Long documentId) {
-
 		try {
 			GNFinderResponseMap response = docService.parsePdfWithGNFinder(filePath, documentId);
 			return Response.status(Status.OK).entity(response).build();
@@ -139,13 +140,11 @@ public class DocumentController {
 	@Path(ApiConstants.NAMES + "/{documentId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "fetch the scientific names in pdf documents", notes = "returns the scientific names detected by gnfinder", response = DocSciName.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
+	@Operation(summary = "Fetch scientific names in pdf documents", description = "Returns the scientific names detected by gnfinder", responses = {
+			@ApiResponse(responseCode = "200", description = "List of detected names", content = @Content(array = @ArraySchema(schema = @Schema(implementation = DocSciName.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data", content = @Content(schema = @Schema(type = "string"))) })
 	public Response findNamesInDocument(@PathParam("documentId") Long documentId,
 			@QueryParam("offset") Integer offset) {
-
 		try {
 			List<DocSciName> response = docService.getNamesByDocumentId(documentId, offset);
 			return Response.status(Status.OK).entity(response).build();
@@ -159,10 +158,9 @@ public class DocumentController {
 	@Path(ApiConstants.SHOW + "/{documentId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "fetch the document show page data", notes = "returns the document show page data", response = ShowDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
+	@Operation(summary = "Fetch the document show page data", description = "Returns the document show page data", responses = {
+			@ApiResponse(responseCode = "200", description = "Document show page", content = @Content(schema = @Schema(implementation = ShowDocument.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data", content = @Content(schema = @Schema(type = "string"))) })
 	public Response showDocument(@PathParam("documentId") String documentId) {
 		try {
 			Long docId = Long.parseLong(documentId);
@@ -177,14 +175,11 @@ public class DocumentController {
 	@Path(ApiConstants.CREATE)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "create the document ", notes = "returns the document show page data", response = ShowDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
-	public Response createDocument(@Context HttpServletRequest request,
-			@ApiParam(name = "documentCreate") DocumentCreateData documentCreate) {
+	@Operation(summary = "Create the document", description = "Returns the document show page data", requestBody = @RequestBody(description = "Document data", required = true, content = @Content(schema = @Schema(implementation = DocumentCreateData.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Document created", content = @Content(schema = @Schema(implementation = ShowDocument.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data") })
+	public Response createDocument(@Context HttpServletRequest request, DocumentCreateData documentCreate) {
 		try {
 			ShowDocument result = docService.createDocument(request, documentCreate);
 			if (result != null)
@@ -199,12 +194,10 @@ public class DocumentController {
 	@Path(ApiConstants.EDIT + "/{documentId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "fetch the document for edit page", notes = "returns the document edit data", response = DocumentEditData.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
+	@Operation(summary = "Fetch the document for edit page", description = "Returns the document edit data", responses = {
+			@ApiResponse(responseCode = "200", description = "Edit data fetched", content = @Content(schema = @Schema(implementation = DocumentEditData.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data") })
 	public Response getEditDocument(@Context HttpServletRequest request, @PathParam("documentId") String documentId) {
 		try {
 			Long docId = Long.parseLong(documentId);
@@ -212,7 +205,6 @@ public class DocumentController {
 			if (result != null)
 				return Response.status(Status.OK).entity(result).build();
 			return Response.status(Status.NOT_ACCEPTABLE).build();
-
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
@@ -222,14 +214,11 @@ public class DocumentController {
 	@Path(ApiConstants.UPDATE)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "update the document", notes = "returns the document show page data", response = ShowDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
-	public Response updateDocument(@Context HttpServletRequest request,
-			@ApiParam(name = "docEditData") DocumentEditData docEditData) {
+	@Operation(summary = "Update the document", description = "Returns the updated document show page data", requestBody = @RequestBody(description = "Document edit data", required = true, content = @Content(schema = @Schema(implementation = DocumentEditData.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Document updated", content = @Content(schema = @Schema(implementation = ShowDocument.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data") })
+	public Response updateDocument(@Context HttpServletRequest request, DocumentEditData docEditData) {
 		try {
 			ShowDocument result = docService.updateDocument(request, docEditData);
 			if (result != null)
@@ -245,10 +234,9 @@ public class DocumentController {
 	@Path(ApiConstants.UPLOAD + ApiConstants.BIB)
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "upload the bib file", notes = "returns the bib file data in a object", response = BibFieldsData.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
+	@Operation(summary = "Upload the bib file", description = "Returns the bib file data in a object", responses = {
+			@ApiResponse(responseCode = "200", description = "Parsed successfully", content = @Content(schema = @Schema(implementation = BibFieldsData.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data") })
 	public Response uploadBib(@FormDataParam("file") InputStream uploadedInputStream,
 			@FormDataParam("file") FormDataContentDisposition fileDetail) {
 		try {
@@ -263,9 +251,9 @@ public class DocumentController {
 	@Path(ApiConstants.BULK + ApiConstants.UPLOAD + ApiConstants.BIB)
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
+	@Operation(summary = "Bulk upload Bib file", description = "Processes bulk BibTeX upload", responses = {
+			@ApiResponse(responseCode = "200", description = "Upload accepted"), })
 	public Response bulkUploadBib(@Context HttpServletRequest request,
 			@FormDataParam("file") InputStream uploadedInputStream,
 			@FormDataParam("file") FormDataContentDisposition fileDetail) {
@@ -281,14 +269,11 @@ public class DocumentController {
 	@Path(ApiConstants.BULK + ApiConstants.UPLOAD + ApiConstants.EXCEL)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "bulk upload the excel file", notes = "starts the process of bulk upload", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
-	public Response bulkUploadExcel(@Context HttpServletRequest request,
-			@ApiParam(name = "bulkUploadData") BulkUploadExcelData bulkUploadData) {
+	@Operation(summary = "Bulk upload the Excel file", description = "Starts the process of bulk upload", requestBody = @RequestBody(description = "Bulk upload Excel data", required = true, content = @Content(schema = @Schema(implementation = BulkUploadExcelData.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Process completed", content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data") })
+	public Response bulkUploadExcel(@Context HttpServletRequest request, BulkUploadExcelData bulkUploadData) {
 		try {
 			docService.bulkUploadExcel(request, bulkUploadData);
 
@@ -301,11 +286,9 @@ public class DocumentController {
 	@GET
 	@Path(ApiConstants.BIB + ApiConstants.ITEM + ApiConstants.ALL)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "fetch all the bibtex item type", notes = "return all the item type with id", response = BibTexItemType.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "unable to fetch the bib item type", response = String.class) })
-
+	@Operation(summary = "Fetch all the BibTeX item types", description = "Returns all the item types with IDs", responses = {
+			@ApiResponse(responseCode = "200", description = "List of item types", content = @Content(array = @ArraySchema(schema = @Schema(implementation = BibTexItemType.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the bib item types") })
 	public Response getAllBibItemType() {
 		try {
 			List<BibTexItemType> result = docService.fetchAllItemType();
@@ -320,10 +303,9 @@ public class DocumentController {
 	@Path(ApiConstants.BIB + ApiConstants.FIELDS + "/{itemId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "fetch all the fields based on item type", notes = "returns all the relevant field based on item type", response = Map.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
-
+	@Operation(summary = "Fetch all the fields based on item type", description = "Returns all the relevant field based on item type", responses = {
+			@ApiResponse(responseCode = "200", description = "Field map returned", content = @Content(schema = @Schema(implementation = Map.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the data") })
 	public Response getItemsFieldType(@PathParam("itemId") String itemId) {
 		try {
 			Long itemTypeId = Long.parseLong(itemId);
@@ -340,13 +322,10 @@ public class DocumentController {
 	@Path(ApiConstants.DELETE + "/{documentId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "Deletet the document", notes = "Confirms if the document got deleted", response = Boolean.class)
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "unable to delete the document", response = String.class) })
-
+	@Operation(summary = "Delete the document", description = "Confirms if the document got deleted", responses = {
+			@ApiResponse(responseCode = "200", description = "Document deleted", content = @Content(schema = @Schema(implementation = Boolean.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to delete the document") })
 	public Response deleteDocument(@Context HttpServletRequest request, @PathParam("documentId") String documentId) {
 		try {
 			Long docId = Long.parseLong(documentId);
@@ -364,13 +343,10 @@ public class DocumentController {
 	@Path(ApiConstants.PERMISSION + "/{documentId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "fetch user permission on document show page", notes = "returns the document show page permission", response = DocumentUserPermission.class)
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "unable to fetch user permission", response = String.class) })
-
+	@Operation(summary = "Fetch user permission on document show page", description = "Returns document show page permission", responses = {
+			@ApiResponse(responseCode = "200", description = "Permission details returned", content = @Content(schema = @Schema(implementation = DocumentUserPermission.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch user permission") })
 	public Response getUserPermission(@Context HttpServletRequest request, @PathParam("documentId") String documentId) {
 		try {
 			DocumentUserPermission result = docService.getUserPermission(request, documentId);
@@ -384,13 +360,10 @@ public class DocumentController {
 	@GET
 	@Path(ApiConstants.USERGROUP + ApiConstants.PERMISSION)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "fetch all the usergroup associated with a user", notes = "returns usergroup list associated with user", response = UserGroupIbp.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "unable to fetch the usergroup", response = String.class) })
-
+	@Operation(summary = "Fetch all the usergroup associated with a user", description = "Returns usergroup list associated with user", responses = {
+			@ApiResponse(responseCode = "200", description = "User groups returned", content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserGroupIbp.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the user groups") })
 	public Response getAllowedUserGroup(@Context HttpServletRequest request) {
 		try {
 			List<UserGroupIbp> result = docService.getAllowedUserGroupList(request);
@@ -404,14 +377,11 @@ public class DocumentController {
 	@Path(ApiConstants.ADD + ApiConstants.COMMENT)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "Adds a comment", notes = "Return the current activity", response = Activity.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to log a comment", response = String.class) })
-
-	public Response addCommnet(@Context HttpServletRequest request,
-			@ApiParam(name = "commentData") CommentLoggingData commentData) {
+	@Operation(summary = "Add a comment", description = "Returns the current activity", requestBody = @RequestBody(description = "Comment data", required = true, content = @Content(schema = @Schema(implementation = CommentLoggingData.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Comment added", content = @Content(schema = @Schema(implementation = Activity.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to log a comment") })
+	public Response addComment(@Context HttpServletRequest request, CommentLoggingData commentData) {
 		try {
 			Activity result = docService.addDocumentComment(request, commentData);
 			return Response.status(Status.OK).entity(result).build();
@@ -425,14 +395,13 @@ public class DocumentController {
 	@Path(ApiConstants.DELETE + ApiConstants.COMMENT + "/{commentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "Deletes a comment", notes = "Return the current activity", response = Activity.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to log a comment", response = String.class) })
-
-	public Response deleteCommnet(@Context HttpServletRequest request,
-			@ApiParam(name = "commentData") CommentLoggingData commentDatas, @PathParam("commentId") String commentId) {
+	@Operation(summary = "Deletes a comment", description = "Return the current activity", parameters = {
+			@Parameter(name = "commentId", description = "Comment ID", required = true) }, requestBody = @RequestBody(description = "Comment data", required = true, content = @Content(schema = @Schema(implementation = CommentLoggingData.class))), responses = {
+					@ApiResponse(responseCode = "200", description = "Comment deleted", content = @Content(schema = @Schema(implementation = Activity.class))),
+					@ApiResponse(responseCode = "400", description = "Unable to log a comment") })
+	public Response deleteCommnet(@Context HttpServletRequest request, CommentLoggingData commentDatas,
+			@PathParam("commentId") String commentId) {
 		try {
 			Activity result = docService.removeDocumentComment(request, commentDatas, commentId);
 			return Response.status(Status.OK).entity(result).build();
@@ -446,10 +415,9 @@ public class DocumentController {
 	@Path(ApiConstants.LANGUAGE)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Find all the Languages based on IsDirty field", notes = "Returns all the Languages Details", response = Language.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Languages Not Found", response = String.class) })
-
+	@Operation(summary = "Find all the Languages based on IsDirty field", description = "Returns all the Languages Details", responses = {
+			@ApiResponse(responseCode = "200", description = "Languages fetched", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Language.class)))),
+			@ApiResponse(responseCode = "400", description = "Languages not found") })
 	public Response getLanguaes(@QueryParam("isDirty") Boolean isDirty) {
 		try {
 			List<Language> result = docService.getLanguages(isDirty);
@@ -463,10 +431,9 @@ public class DocumentController {
 	@Path(ApiConstants.TAGS + ApiConstants.AUTOCOMPLETE)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Find the Sugguestion for tags", notes = "Return list of Top 10 tags matching the phrase", response = Tags.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to fetch the tags", response = String.class) })
-
+	@Operation(summary = "Find the Sugguestion for tags", description = "Return list of Top 10 tags matching the phrase", responses = {
+			@ApiResponse(responseCode = "200", description = "Tag suggestions fetched", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Tags.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch the tags") })
 	public Response getTagsSuggetion(@QueryParam("phrase") String phrase) {
 		try {
 			List<Tags> result = docService.getTagsSuggestion(phrase);
@@ -480,14 +447,11 @@ public class DocumentController {
 	@Path(ApiConstants.UPDATE + ApiConstants.TAGS)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "update tags for the Document", notes = "Returns Tags list", response = Tags.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to update the tags", response = String.class) })
-
-	public Response updateTags(@Context HttpServletRequest request,
-			@ApiParam(name = "tagsMapping") TagsMapping tagsMapping) {
+	@Operation(summary = "Update tags for the document", description = "Returns tag list", requestBody = @RequestBody(description = "Tags mapping data", required = true, content = @Content(schema = @Schema(implementation = TagsMapping.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Tags updated", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Tags.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to update tags") })
+	public Response updateTags(@Context HttpServletRequest request, TagsMapping tagsMapping) {
 		try {
 			List<Tags> result = docService.updateTags(request, tagsMapping);
 			return Response.status(Status.OK).entity(result).build();
@@ -500,14 +464,13 @@ public class DocumentController {
 	@Path(ApiConstants.UPDATE + ApiConstants.SPECIESGROUP + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "update the speciesGroup ids", notes = "return list of speciesGroup ids", response = Long.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to update", response = String.class) })
-
+	@Operation(summary = "Update species group IDs", description = "Returns list of species group IDs", parameters = {
+			@Parameter(name = "documentId", description = "Document ID", required = true) }, requestBody = @RequestBody(description = "List of species group IDs", required = true, content = @Content(array = @ArraySchema(schema = @Schema(implementation = Long.class)))), responses = {
+					@ApiResponse(responseCode = "200", description = "Species group updated", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Long.class)))),
+					@ApiResponse(responseCode = "400", description = "Unable to update") })
 	public Response udpateSpeciesGroup(@Context HttpServletRequest request, @PathParam("documentId") String documentId,
-			@ApiParam("speciesGroupList") List<Long> speciesGroupList) {
+			List<Long> speciesGroupList) {
 		try {
 			Long docId = Long.parseLong(documentId);
 			List<Long> result = docService.updateSpeciesGroup(request, docId, speciesGroupList);
@@ -520,10 +483,9 @@ public class DocumentController {
 	@GET
 	@Path(ApiConstants.HABITAT + ApiConstants.ALL)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Get all the Habitat", notes = "Returns all the habitat in habitat order", response = Habitat.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to get the habitat", response = String.class) })
-
+	@Operation(summary = "Get all the habitats", description = "Returns all habitat in habitat order", responses = {
+			@ApiResponse(responseCode = "200", description = "Habitats returned", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Habitat.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to get the habitat") })
 	public Response getAllHabitat() {
 		try {
 			List<Habitat> result = docService.getAllHabitat();
@@ -537,14 +499,13 @@ public class DocumentController {
 	@Path(ApiConstants.UPDATE + ApiConstants.HABITAT + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "update the habitat ids", notes = "return list of habitat ids", response = Long.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to update", response = String.class) })
-
+	@Operation(summary = "Update habitat ids", description = "Return list of habitat ids", parameters = {
+			@Parameter(name = "documentId", description = "Document ID", required = true) }, requestBody = @RequestBody(description = "List of habitat IDs", required = true, content = @Content(array = @ArraySchema(schema = @Schema(implementation = Long.class)))), responses = {
+					@ApiResponse(responseCode = "200", description = "Habitats updated", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Long.class)))),
+					@ApiResponse(responseCode = "400", description = "Unable to update") })
 	public Response updateHabitat(@Context HttpServletRequest request, @PathParam("documentId") String documentId,
-			@ApiParam("habitatList") List<Long> habitatList) {
+			List<Long> habitatList) {
 		try {
 			Long docId = Long.parseLong(documentId);
 			List<Long> result = docService.updateHabitat(request, docId, habitatList);
@@ -559,15 +520,13 @@ public class DocumentController {
 	@Path(ApiConstants.UPDATE + ApiConstants.USERGROUP + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "Update the UserGroup linked with a Document", notes = "Returns all the current userGroup Linked", response = UserGroupIbp.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "Unable to updated the userGroup of Document", response = String.class) })
-
+	@Operation(summary = "Update the UserGroup linked with a Document", description = "Returns all the current userGroup Linked", parameters = {
+			@Parameter(name = "documentId", description = "Document ID", required = true) }, requestBody = @RequestBody(description = "List of user group IDs", required = true, content = @Content(array = @ArraySchema(schema = @Schema(implementation = Long.class)))), responses = {
+					@ApiResponse(responseCode = "200", description = "User groups updated", content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserGroupIbp.class)))),
+					@ApiResponse(responseCode = "400", description = "Unable to updated the userGroup of Document") })
 	public Response updateUserGroup(@Context HttpServletRequest request, @PathParam("documentId") String documentId,
-			@ApiParam(name = "userGroupList") List<Long> userGroupList) {
+			List<Long> userGroupList) {
 		try {
 			List<UserGroupIbp> result = docService.updateUserGroup(request, documentId, userGroupList);
 			return Response.status(Status.OK).entity(result).build();
@@ -581,13 +540,10 @@ public class DocumentController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
-
-	@ApiOperation(value = "Posting of Featured to a Group", notes = "Returns the Details of Featured", response = Featured.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 404, message = "Unable to Feature in a Group", response = String.class) })
-
-	public Response createFeatured(@Context HttpServletRequest request,
-			@ApiParam(name = "featuredCreate") FeaturedCreate featuredCreate) {
+	@Operation(summary = "Posting of Featured to a Group", description = "Marks a document as featured in specified user groups", requestBody = @RequestBody(description = "Returns the Details of Featured", required = true, content = @Content(schema = @Schema(implementation = FeaturedCreate.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Document featured", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Featured.class)))),
+			@ApiResponse(responseCode = "404", description = "Unable to feature in a group") })
+	public Response createFeatured(@Context HttpServletRequest request, FeaturedCreate featuredCreate) {
 		try {
 			List<Featured> result = docService.createFeatured(request, featuredCreate);
 			return Response.status(Status.OK).entity(result).build();
@@ -600,13 +556,13 @@ public class DocumentController {
 	@Path(ApiConstants.UNFEATURED + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-	@ApiOperation(value = "UnFeatures a Object from a UserGroup", notes = "Returns the Current Featured", response = Featured.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Unable to Unfeature", response = String.class) })
-
+	@Operation(summary = "Unfeatures a Object from a UserGroup", description = "Returns the Current Featured", parameters = {
+			@Parameter(name = "documentId", description = "Document ID", required = true) }, requestBody = @RequestBody(description = "List of user group IDs", required = true, content = @Content(array = @ArraySchema(schema = @Schema(implementation = Long.class)))), responses = {
+					@ApiResponse(responseCode = "200", description = "Document unfeatured", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Featured.class)))),
+					@ApiResponse(responseCode = "404", description = "Unable to unfeature") })
 	public Response unFeatured(@Context HttpServletRequest request, @PathParam("documentId") String documentId,
-			@ApiParam(name = "userGroupList") List<Long> userGroupList) {
+			List<Long> userGroupList) {
 		try {
 			List<Featured> result = docService.unFeatured(request, documentId, userGroupList);
 			return Response.status(Status.OK).entity(result).build();
@@ -620,13 +576,12 @@ public class DocumentController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
-
-	@ApiOperation(value = "Flag a Document", notes = "Return a list of flag to the document", response = FlagShow.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to flag a Document", response = String.class),
-			@ApiResponse(code = 406, message = "User has already flagged", response = String.class) })
-
+	@Operation(summary = "Flag a document", description = "Return a list of flag to the document", parameters = {
+			@Parameter(name = "documentId", description = "ID of the document to flag", required = true) }, requestBody = @RequestBody(description = "Flag data", required = true, content = @Content(schema = @Schema(implementation = FlagIbp.class))), responses = {
+					@ApiResponse(responseCode = "200", description = "Flagged successfully", content = @Content(array = @ArraySchema(schema = @Schema(implementation = FlagShow.class)))),
+					@ApiResponse(responseCode = "406", description = "User has already flagged") })
 	public Response createFlag(@Context HttpServletRequest request, @PathParam("documentId") String documentId,
-			@ApiParam(name = "flagIbp") FlagIbp flagIbp) {
+			FlagIbp flagIbp) {
 		try {
 			Long docId = Long.parseLong(documentId);
 			List<FlagShow> result = docService.createFlag(request, docId, flagIbp);
@@ -644,11 +599,11 @@ public class DocumentController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
-
-	@ApiOperation(value = "Unflag a document", notes = "Return a list of flag to the Document", response = FlagShow.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to unflag a document", response = String.class),
-			@ApiResponse(code = 406, message = "User is not allowed to unflag", response = String.class) })
-
+	@Operation(summary = "Unflag a document", description = "Return a list of flag to the Document", parameters = {
+			@Parameter(name = "documentId", description = "Document ID", required = true),
+			@Parameter(name = "flagId", description = "Flag ID", required = true) }, responses = {
+					@ApiResponse(responseCode = "200", description = "Unflagged successfully", content = @Content(array = @ArraySchema(schema = @Schema(implementation = FlagShow.class)))),
+					@ApiResponse(responseCode = "400", description = "Unable to unflag the document") })
 	public Response unFlag(@Context HttpServletRequest request, @PathParam("documentId") String documentId,
 			@PathParam("flagId") String flagId) {
 		try {
@@ -667,10 +622,10 @@ public class DocumentController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
-
-	@ApiOperation(value = "Marks follow for a User", notes = "Returnt the follow details", response = Follow.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to mark follow", response = String.class) })
-
+	@Operation(summary = "Marks follow for a User", description = "Returns the follow details", parameters = {
+			@Parameter(name = "documentId", description = "Document ID to follow", required = true) }, responses = {
+					@ApiResponse(responseCode = "200", description = "Followed successfully", content = @Content(schema = @Schema(implementation = Follow.class))),
+					@ApiResponse(responseCode = "400", description = "Unable to mark follow") })
 	public Response followObservation(@Context HttpServletRequest request, @PathParam("documentId") String documentId) {
 		try {
 			Long docId = Long.parseLong(documentId);
@@ -687,12 +642,11 @@ public class DocumentController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
-
-	@ApiOperation(value = "Marks unfollow for a User", notes = "Returnt the unfollow details", response = Follow.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to mark unfollow", response = String.class) })
-
+	@Operation(summary = "Marks unfollow for a User", description = "Returns the unfollow details", parameters = {
+			@Parameter(name = "documentId", description = "Document ID to unfollow", required = true) }, responses = {
+					@ApiResponse(responseCode = "200", description = "Unfollowed successfully", content = @Content(schema = @Schema(implementation = Follow.class))),
+					@ApiResponse(responseCode = "400", description = "Unable to mark unfollow") })
 	public Response unfollow(@Context HttpServletRequest request, @PathParam("documentId") String documentId) {
-
 		try {
 			Long docId = Long.parseLong(documentId);
 			Follow result = docService.unFollowRequest(request, docId);
@@ -706,13 +660,11 @@ public class DocumentController {
 	@Path(ApiConstants.LOG + ApiConstants.DOWNLOAD)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.TEXT_PLAIN)
-
 	@ValidateUser
-
-	@ApiOperation(value = "log the document download", notes = "return true incase of logging", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to log the download", response = String.class) })
-	public Response logDocumentDownload(@Context HttpServletRequest request,
-			@ApiParam("documentDownloadData") DownloadLogData downloadLogData) {
+	@Operation(summary = "Log the document download", description = "Return true in case of logging", requestBody = @RequestBody(description = "Download log data", required = true, content = @Content(schema = @Schema(implementation = DownloadLogData.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Download logged", content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to log the download") })
+	public Response logDocumentDownload(@Context HttpServletRequest request, DownloadLogData downloadLogData) {
 		try {
 			Boolean result = docService.documentDownloadLog(request, downloadLogData);
 
@@ -729,12 +681,10 @@ public class DocumentController {
 	@Path(ApiConstants.TAXONOMY + "/{taxonConceptId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "fetch document on basis of taxonConceptId", notes = "Return the document meta data list", response = DocumentMeta.class, responseContainer = "List")
-	@ApiResponses(value = {
-
-			@ApiResponse(code = 400, message = "unable to return the data", response = String.class) })
-
+	@Operation(summary = "Fetch document on basis of taxonConceptId", description = "Return the document meta data list", parameters = {
+			@Parameter(name = "taxonConceptId", description = "Taxon concept ID", required = true) }, responses = {
+					@ApiResponse(responseCode = "200", description = "Documents returned", content = @Content(array = @ArraySchema(schema = @Schema(implementation = DocumentMeta.class)))),
+					@ApiResponse(responseCode = "400", description = "Unable to return the data") })
 	public Response getDocumentByTaxonConceptId(@PathParam("taxonConceptId") String taxonConceptId) {
 		try {
 			Long taxonomyConceptId = Long.parseLong(taxonConceptId);
@@ -749,7 +699,42 @@ public class DocumentController {
 	@Path(ApiConstants.LIST + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-
+	@Operation(summary = "Fetch document list with filters", description = "Returns a list of documents based on various filters and pagination", parameters = {
+			@Parameter(name = "index", description = "Index to query", required = true),
+			@Parameter(name = "type", description = "Type to query", required = true),
+			@Parameter(name = "max", description = "Max results", example = "10"),
+			@Parameter(name = "offset", description = "Pagination offset", example = "0"),
+			@Parameter(name = "view", description = "View type (list/grid)", example = "list"),
+			@Parameter(name = "sort", description = "Field to sort on", example = "document.lastRevised"),
+			@Parameter(name = "tags", description = "Comma-separated tag filters"),
+			@Parameter(name = "createdOnMaxDate", description = "Max creation date"),
+			@Parameter(name = "createdOnMinDate", description = "Min creation date"),
+			@Parameter(name = "revisedOnMaxDate", description = "Max revised date"),
+			@Parameter(name = "revisedOnMinDate", description = "Min revised date"),
+			@Parameter(name = "isFlagged", description = "Flag filter"),
+			@Parameter(name = "user", description = "User ID filter"),
+			@Parameter(name = "sGroup", description = "Species group filter"),
+			@Parameter(name = "habitatIds", description = "Habitat filter"),
+			@Parameter(name = "flags", description = "Flags filter"),
+			@Parameter(name = "featured", description = "Featured filter"),
+			@Parameter(name = "left", description = "Bounding box left (longitude)"),
+			@Parameter(name = "right", description = "Bounding box right (longitude)"),
+			@Parameter(name = "top", description = "Bounding box top (latitude)"),
+			@Parameter(name = "bottom", description = "Bounding box bottom (latitude)"),
+			@Parameter(name = "state", description = "State filter"),
+			@Parameter(name = "userGroupList", description = "User group filter"),
+			@Parameter(name = "geoAggregationField", description = "Field for geo aggregation"),
+			@Parameter(name = "geoShapeFilterField", description = "Geo shape filter field"),
+			@Parameter(name = "nestedField", description = "Nested field to query"),
+			@Parameter(name = "itemType", description = "Item type filter"),
+			@Parameter(name = "year", description = "Year filter"),
+			@Parameter(name = "author", description = "Author filter"),
+			@Parameter(name = "publisher", description = "Publisher filter"),
+			@Parameter(name = "title", description = "Title filter"),
+			@Parameter(name = "geoAggegationPrecision", description = "Precision for geo aggregation", example = "1"),
+			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false") }, requestBody = @RequestBody(required = false, content = @Content(schema = @Schema(implementation = DocumentListParams.class))), responses = {
+					@ApiResponse(responseCode = "200", description = "List of documents returned", content = @Content(schema = @Schema(implementation = DocumentListData.class))),
+					@ApiResponse(responseCode = "400", description = "Error occurred during document list fetch") })
 	public Response DocumentList(@PathParam("index") String index, @PathParam("type") String type,
 			@DefaultValue("10") @QueryParam("max") Integer max, @DefaultValue("0") @QueryParam("offset") Integer offset,
 			@DefaultValue("list") @QueryParam("view") String view,
@@ -774,8 +759,7 @@ public class DocumentController {
 			@QueryParam("title") String title,
 
 			@DefaultValue("1") @QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
-			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
-			@ApiParam(name = "location") DocumentListParams location) {
+			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation, DocumentListParams location) {
 		try {
 
 			if (max > 50) {

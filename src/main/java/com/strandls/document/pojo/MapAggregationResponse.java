@@ -3,12 +3,12 @@ package com.strandls.document.pojo;
 import java.util.Map;
 
 public class MapAggregationResponse {
-	
+
 	private Map<String, Long> groupSpeciesName;
 	private Map<String, Long> groupState;
 	private Map<String, Long> groupYearofPublication;
 	private Map<String, Long> groupTypeOfDocument;
-	private Map<String,Long>  groupUserGroupName;
+	private Map<String, Long> groupUserGroupName;
 
 	public Map<String, Long> getGroupSpeciesName() {
 		return groupSpeciesName;
@@ -42,13 +42,12 @@ public class MapAggregationResponse {
 		this.groupTypeOfDocument = groupTypeOfDocument;
 	}
 
-	public Map<String,Long> getGroupUserGroupName() {
+	public Map<String, Long> getGroupUserGroupName() {
 		return groupUserGroupName;
 	}
 
-	public void setGroupUserGroupName(Map<String,Long> groupUserGroupName) {
+	public void setGroupUserGroupName(Map<String, Long> groupUserGroupName) {
 		this.groupUserGroupName = groupUserGroupName;
 	}
-
 
 }
