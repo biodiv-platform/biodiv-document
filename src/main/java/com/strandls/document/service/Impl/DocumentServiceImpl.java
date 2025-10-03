@@ -1350,7 +1350,7 @@ public class DocumentServiceImpl implements DocumentService {
 			JSONArray userRole = (JSONArray) profile.getAttribute(ROLES);
 			if (userRole.contains(ROLE_ADMIN)) {
 
-				allowedUserGroup = ugService.getAllUserGroup();
+				allowedUserGroup = ugService.getAllUserGroup("");
 				for (UserGroupIbp ug : allowedUserGroup) {
 					userGroupFeatureRole.add(ug.getId());
 				}
@@ -1395,7 +1395,7 @@ public class DocumentServiceImpl implements DocumentService {
 			List<UserGroupIbp> allowedUserGroup = null;
 			JSONArray userRole = (JSONArray) profile.getAttribute(ROLES);
 			if (userRole.contains(ROLE_ADMIN)) {
-				allowedUserGroup = ugService.getAllUserGroup();
+				allowedUserGroup = ugService.getAllUserGroup("");
 			} else {
 
 				ugService = headers.addUserGroupHeader(ugService, request.getHeader(HttpHeaders.AUTHORIZATION));
