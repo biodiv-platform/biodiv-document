@@ -233,14 +233,23 @@ public class DocumentServiceImpl implements DocumentService {
 	@Override
 	public ShowDocument show(Long documentId) {
 		try {
+			logger.info("Starting show() for documentId: {}", documentId);
+
 			Document document = documentDao.findById(documentId);
+			logger.info("Retrieved document from DAO");
+
 			if (!document.getIsDeleted()) {
+				logger.info("Document is not deleted, proceeding with show");
 
 				UserIbp userIbp = userService.getUserIbp(document.getAuthorId().toString());
+				logger.info("Retrieved user info for authorId: {}", document.getAuthorId());
 
 				List<DocumentCoverage> documentCoverages = docCoverageDao.findByDocumentId(documentId);
+				logger.info("Retrieved {} document coverages", documentCoverages.size());
 
 				List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
+				logger.info("Retrieved {} landscapes", allLandscape.size());
+
 				for (DocumentCoverage docCoverage : documentCoverages) {
 					if (docCoverage.getGeoEntityId() != null) {
 						for (Landscape landscape : allLandscape) {
@@ -252,39 +261,65 @@ public class DocumentServiceImpl implements DocumentService {
 
 					}
 				}
+				logger.info("Completed landscape mapping for coverages");
 
 				List<UserGroupIbp> userGroup = ugService.getUserGroupByDocId(documentId.toString());
+				logger.info("Retrieved {} user groups", userGroup.size());
+
 				List<Featured> featured = ugService.getAllFeatured("content.eml.Document", documentId.toString());
+				logger.info("Retrieved {} featured items", featured.size());
 
 				UFile resource = null;
 				if (document.getuFileId() != null) {
+					logger.info("Fetching resource for uFileId: {}", document.getuFileId());
 					resource = resourceService.getUFilePath(document.getuFileId().toString());
 					resource.setPath(resource.getPath().replace("/documents", ""));
+					logger.info("Retrieved and updated resource path");
+				} else {
+					logger.info("No uFileId found for document");
 				}
 
+				logger.info("Fetching license for licenseId: {}", document.getLicenseId());
 				License documentLicense = resourceService.getLicenseResource(document.getLicenseId().toString());
+				logger.info("Retrieved license resource");
 
+				logger.info("Fetching flags from utility service");
 				List<FlagShow> flag = utilityService.getFlagByObjectType("content.eml.Document", documentId.toString());
+				logger.info("Retrieved {} flags", flag.size());
+
+				logger.info("Fetching tags from utility service");
 				List<Tags> tags = utilityService.getTags("document", documentId.toString());
+				logger.info("Retrieved {} tags", tags.size());
 
 				List<DocumentHabitat> docHabitats = docHabitatDao.findByDocumentId(documentId);
+				logger.info("Retrieved {} document habitats", docHabitats.size());
+
 				List<DocumentSpeciesGroup> docSGroups = docSGroupDao.findByDocumentId(documentId);
+				logger.info("Retrieved {} document species groups", docSGroups.size());
+
 				List<Long> docHabitatIds = new ArrayList<Long>();
 				List<Long> docSGroupIds = new ArrayList<Long>();
 
 				for (DocumentHabitat docHabitat : docHabitats) {
 					docHabitatIds.add(docHabitat.getHabitatId());
 				}
+				logger.info("Extracted {} habitat IDs", docHabitatIds.size());
+
 				for (DocumentSpeciesGroup docSGroup : docSGroups) {
 					docSGroupIds.add(docSGroup.getSpeciesGroupId());
 				}
+				logger.info("Extracted {} species group IDs", docSGroupIds.size());
 
+				logger.info("Creating ShowDocument object");
 				ShowDocument showDoc = new ShowDocument(document, userIbp, documentCoverages, userGroup, featured,
 						resource, docHabitatIds, docSGroupIds, flag, tags, documentLicense);
+				logger.info("Successfully created ShowDocument, returning response");
 				return showDoc;
+			} else {
+				logger.info("Document is deleted, returning null");
 			}
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("Error in show() for documentId {}: {}", documentId, e.getMessage(), e);
 		}
 		return null;
 	}
