@@ -349,8 +349,9 @@ public class DocumentServiceImpl implements DocumentService {
 				filesDto.setModule("DOCUMENT");
 
 				fileUpload = headers.addFileUploadHeader(fileUpload, request.getHeader(HttpHeaders.AUTHORIZATION));
-				String json = fileUpload.moveFiles(filesDto).getData().toString();
-				Map<String, Object> fileResponse = new ObjectMapper().readValue(json, new TypeReference<>() {
+				ObjectMapper mapper = new ObjectMapper();
+				String json = mapper.writeValueAsString(fileUpload.moveFiles(filesDto).getData());
+				Map<String, Object> fileResponse = mapper.readValue(json, new TypeReference<>() {
 				});
 
 				if (fileResponse != null && !fileResponse.isEmpty()) {
@@ -536,8 +537,9 @@ public class DocumentServiceImpl implements DocumentService {
 					filesDto.setModule("DOCUMENT");
 
 					fileUpload = headers.addFileUploadHeader(fileUpload, request.getHeader(HttpHeaders.AUTHORIZATION));
-					String json = fileUpload.moveFiles(filesDto).getData().toString();
-					Map<String, Object> fileResponse = new ObjectMapper().readValue(json, new TypeReference<>() {
+					ObjectMapper mapper = new ObjectMapper();
+					String json = mapper.writeValueAsString(fileUpload.moveFiles(filesDto).getData());
+					Map<String, Object> fileResponse = mapper.readValue(json, new TypeReference<>() {
 					});
 
 					if (fileResponse != null && !fileResponse.isEmpty()) {
@@ -818,8 +820,9 @@ public class DocumentServiceImpl implements DocumentService {
 			filesDto.setModule("DOCUMENT");
 
 			fileUpload = headers.addFileUploadHeader(fileUpload, request.getHeader(HttpHeaders.AUTHORIZATION));
-			String json = fileUpload.getAllFilePathsByUser(filesDto).getData().toString();
-			Map<String, Object> allFiles = new ObjectMapper().readValue(json, new TypeReference<>() {
+			ObjectMapper mapper = new ObjectMapper();
+			String json = mapper.writeValueAsString(fileUpload.getAllFilePathsByUser(filesDto).getData());
+			Map<String, Object> allFiles = mapper.readValue(json, new TypeReference<>() {
 			});
 
 			while (dataSheetIterator.hasNext()) {
