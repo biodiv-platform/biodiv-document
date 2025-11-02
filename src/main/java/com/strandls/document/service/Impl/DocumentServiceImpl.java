@@ -245,9 +245,15 @@ public class DocumentServiceImpl implements DocumentService {
 				logger.info("Retrieved user info for authorId: {}", document.getAuthorId());
 
 				List<DocumentCoverage> documentCoverages = docCoverageDao.findByDocumentId(documentId);
+				if (documentCoverages == null) {
+					documentCoverages = new ArrayList<>();
+				}
 				logger.info("Retrieved {} document coverages", documentCoverages.size());
 
 				List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
+				if (allLandscape == null) {
+					allLandscape = new ArrayList<>();
+				}
 				logger.info("Retrieved {} landscapes", allLandscape.size());
 
 				for (DocumentCoverage docCoverage : documentCoverages) {
@@ -264,9 +270,15 @@ public class DocumentServiceImpl implements DocumentService {
 				logger.info("Completed landscape mapping for coverages");
 
 				List<UserGroupIbp> userGroup = ugService.getUserGroupByDocId(documentId.toString());
+				if (userGroup == null) {
+					userGroup = new ArrayList<>();
+				}
 				logger.info("Retrieved {} user groups", userGroup.size());
 
 				List<Featured> featured = ugService.getAllFeatured("content.eml.Document", documentId.toString());
+				if (featured == null) {
+					featured = new ArrayList<>();
+				}
 				logger.info("Retrieved {} featured items", featured.size());
 
 				UFile resource = null;
@@ -285,16 +297,28 @@ public class DocumentServiceImpl implements DocumentService {
 
 				logger.info("Fetching flags from utility service");
 				List<FlagShow> flag = utilityService.getFlagByObjectType("content.eml.Document", documentId.toString());
+				if (flag == null) {
+					flag = new ArrayList<>();
+				}
 				logger.info("Retrieved {} flags", flag.size());
 
 				logger.info("Fetching tags from utility service");
 				List<Tags> tags = utilityService.getTags("document", documentId.toString());
+				if (tags == null) {
+					tags = new ArrayList<>();
+				}
 				logger.info("Retrieved {} tags", tags.size());
 
 				List<DocumentHabitat> docHabitats = docHabitatDao.findByDocumentId(documentId);
+				if (docHabitats == null) {
+					docHabitats = new ArrayList<>();
+				}
 				logger.info("Retrieved {} document habitats", docHabitats.size());
 
 				List<DocumentSpeciesGroup> docSGroups = docSGroupDao.findByDocumentId(documentId);
+				if (docSGroups == null) {
+					docSGroups = new ArrayList<>();
+				}
 				logger.info("Retrieved {} document species groups", docSGroups.size());
 
 				List<Long> docHabitatIds = new ArrayList<Long>();
