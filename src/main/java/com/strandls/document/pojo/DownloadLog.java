@@ -21,7 +21,7 @@ import jakarta.persistence.Table;
  */
 
 @Entity
-@Table(name = "download_log")
+@Table(name = "download_log", schema = "public")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DownloadLog implements Serializable {
 
