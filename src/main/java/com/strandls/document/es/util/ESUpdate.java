@@ -69,7 +69,7 @@ public class ESUpdate {
 
 				Map<String, Object> payload = new HashMap<>();
 				payload.put("id", id);
-				payload.put("userGroups", userGroupList);
+				payload.put("userGroupIbp", userGroupList);
 				ESDocumentShowList.add(payload);
 
 			}
