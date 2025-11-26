@@ -1,11 +1,20 @@
 package com.strandls.document.es.util;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapDocument;
 import com.strandls.esmodule.pojo.MapQueryResponse;
+import com.strandls.userGroup.controller.UserGroupSerivceApi;
+import com.strandls.userGroup.pojo.UserGroupIbp;
 
 public class ESUpdate {
 
@@ -13,6 +22,9 @@ public class ESUpdate {
 
 	@Inject
 	private EsServicesApi esService;
+	
+	@Inject
+	private UserGroupSerivceApi ugService;
 
 
 	public void updateESInstance(String documentId,String documentData) {
@@ -34,6 +46,43 @@ public class ESUpdate {
 			logger.error(e.getMessage());
 		}
 
+	}
+	
+	public void esBulkUpload(String documentIds) {
+
+		if (documentIds == null || documentIds.isEmpty()) {
+			return;
+		}
+
+		List<Map<String, Object>> ESDocumentShowList = new ArrayList<>();
+
+		try {
+
+			for (String id : documentIds.split(",")) {
+				List<UserGroupIbp> userGroupList = new ArrayList<>();
+
+				try {
+					userGroupList = ugService.getUserGroupByDocId(id);
+				} catch (com.strandls.userGroup.ApiException e) {
+					logger.error(e.getMessage());
+				}
+
+				Map<String, Object> payload = new HashMap<>();
+				payload.put("id", id);
+				payload.put("userGroups", userGroupList);
+				ESDocumentShowList.add(payload);
+
+			}
+
+			if (!ESDocumentShowList.isEmpty()) {
+
+				esService.bulkUpdate(DocumentIndex.INDEX.getValue(), DocumentIndex.TYPE.getValue(), ESDocumentShowList);
+
+			}
+
+		} catch (ApiException e) {
+			logger.error(e.getMessage());
+		}
 	}
 
 }
