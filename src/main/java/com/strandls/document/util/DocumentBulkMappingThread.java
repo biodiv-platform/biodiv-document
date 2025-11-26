@@ -24,6 +24,7 @@ import com.strandls.esmodule.pojo.MapSearchQuery;
 import com.strandls.document.Headers;
 import com.strandls.document.es.util.ESBulkUploadThread;
 import com.strandls.document.es.util.ESUpdate;
+import com.strandls.document.pojo.DocumentMappingList;
 import com.strandls.userGroup.controller.UserGroupSerivceApi;
 import com.strandls.userGroup.pojo.BulkGroupPostingData;
 import com.strandls.userGroup.pojo.BulkGroupUnPostingData;
@@ -94,8 +95,8 @@ public class DocumentBulkMappingThread implements Runnable {
 
 		}
 
-		/*if (Boolean.TRUE.equals(selectAll)) {
-			List<ShowSpeciesPage> specieList = new ArrayList<ShowSpeciesPage>();
+		if (Boolean.TRUE.equals(selectAll)) {
+			List<DocumentMappingList> specieList = new ArrayList<DocumentMappingList>();
 
 			try {
 
@@ -104,16 +105,11 @@ public class DocumentBulkMappingThread implements Runnable {
 
 				for (MapDocument document : documents) {
 					JsonNode rootNode = objectMapper.readTree(document.getDocument().toString());
-					((ObjectNode) rootNode).remove("id");
-					((ObjectNode) rootNode).replace("featured", null);
-					((ObjectNode) rootNode).replace("facts", null);
-					((ObjectNode) rootNode).replace("fieldData", null);
-					JsonNode child = ((ObjectNode) rootNode).get("taxonomyDefinition");
-					((ObjectNode) child).replace("defaultHierarchy", null);
+					((ObjectNode) rootNode).replace("documentCoverages", null);
 
 					try {
 
-						specieList.add(objectMapper.readValue(String.valueOf(rootNode), ShowSpeciesPage.class));
+						specieList.add(objectMapper.readValue(String.valueOf(rootNode), DocumentMappingList.class));
 					} catch (IOException e) {
 						logger.error(e.getMessage());
 					}
@@ -121,7 +117,7 @@ public class DocumentBulkMappingThread implements Runnable {
 
 				specieList.forEach(item -> {
 					UserGroupObvFilterData ugFilterData = new UserGroupObvFilterData();
-					ugFilterData.setObservationId(item.getSpecies().getId());
+					ugFilterData.setObservationId(item.getDocument().getId());
 					list.add(ugFilterData);
 				});
 
@@ -131,7 +127,7 @@ public class DocumentBulkMappingThread implements Runnable {
 				logger.error(e.getMessage());
 			}
 
-		}*/
+		}
 
 		if (!list.isEmpty() && !bulkAction.isEmpty()
 				&& (bulkAction.contains("ugBulkPosting") || bulkAction.contains("ugBulkUnPosting"))) {

@@ -59,7 +59,7 @@ public class DocumentMappingList {
 		this.tags = tags;
 	}
 
-	public Object getDocument() {
+	public Document getDocument() {
 		return document;
 	}
 
