@@ -164,11 +164,11 @@ public class DocumentBulkMappingThread implements Runnable {
 					? new BulkGroupUnPostingData()
 					: null;
 			if (ugBulkPostingData != null) {
-				ugBulkPostingData.setRecordType("species");
+				ugBulkPostingData.setRecordType("document");
 				ugBulkPostingData.setUgObvFilterDataList(ugObsList);
 				ugBulkPostingData.setUserGroupList(ugIds);
 			} else if (ugBulkUnPostingData != null) {
-				ugBulkUnPostingData.setRecordType("species");
+				ugBulkUnPostingData.setRecordType("document");
 				ugBulkUnPostingData.setUgFilterDataList(ugObsList);
 				ugBulkUnPostingData.setUserGroupList(ugIds);
 			}
