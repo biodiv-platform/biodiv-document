@@ -1,5 +1,7 @@
 package com.strandls.document.service;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.strandls.document.pojo.DocumentListData;
 import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
@@ -16,5 +18,8 @@ public interface DocumentListService {
 			String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate, String state,
 			String itemType, String year, String author, String publisher, String title,
 			String geoShapeFilterField,MapSearchParams mapSearchParams);
+
+	public void bulkAction(Boolean selectAll, String bulkAction, String bulkDocumentsIds, String bulkUsergroupIds,
+			MapSearchQuery mapSearchQuery, String index, String type, HttpServletRequest request);
 
 }

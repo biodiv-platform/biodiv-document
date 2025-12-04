@@ -45,7 +45,6 @@ public class DocumentBulkMappingThread implements Runnable {
 	private EsServicesApi esService;
 	private ESUpdate esUpdate;
 	private ObjectMapper objectMapper;
-	private final HttpServletRequest request;
 	private final Headers headers;
 	private final String requestAuthHeader;
 
@@ -63,7 +62,6 @@ public class DocumentBulkMappingThread implements Runnable {
 		this.index = index;
 		this.type = type;
 		this.esService = esService;
-		this.request = request;
 		this.headers = headers;
 		this.objectMapper = objectMapper;
 		this.requestAuthHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -77,8 +75,8 @@ public class DocumentBulkMappingThread implements Runnable {
 		List<Long> ugIds = new ArrayList<Long>();
 
 		if (bulkDocumentIds != null && !bulkDocumentIds.isEmpty() && Boolean.FALSE.equals(selectAll)) {
-			documentIds.addAll(
-					Arrays.stream(bulkDocumentIds.split(",")).map(Long::valueOf).collect(Collectors.toList()));
+			documentIds
+					.addAll(Arrays.stream(bulkDocumentIds.split(",")).map(Long::valueOf).collect(Collectors.toList()));
 		}
 
 		if (bulkUsergroupIds != null && !bulkUsergroupIds.isEmpty()) {
@@ -121,9 +119,7 @@ public class DocumentBulkMappingThread implements Runnable {
 					list.add(ugFilterData);
 				});
 
-
 			} catch (IOException | ApiException e) {
-				e.printStackTrace();
 				logger.error(e.getMessage());
 			}
 
@@ -153,40 +149,41 @@ public class DocumentBulkMappingThread implements Runnable {
 	}
 
 	private void bulkGroupAction(List<UserGroupObvFilterData> ugObsList, List<Long> ugIds) {
-		if (!ugObsList.isEmpty()) {
-			BulkGroupPostingData ugBulkPostingData = bulkAction.contains("ugBulkPosting") ? new BulkGroupPostingData()
-					: null;
-			BulkGroupUnPostingData ugBulkUnPostingData = bulkAction.contains("ugBulkUnPosting")
-					? new BulkGroupUnPostingData()
-					: null;
-			if (ugBulkPostingData != null) {
-				ugBulkPostingData.setRecordType("document");
-				ugBulkPostingData.setUgObvFilterDataList(ugObsList);
-				ugBulkPostingData.setUserGroupList(ugIds);
-			} else if (ugBulkUnPostingData != null) {
-				ugBulkUnPostingData.setRecordType("document");
-				ugBulkUnPostingData.setUgFilterDataList(ugObsList);
-				ugBulkUnPostingData.setUserGroupList(ugIds);
+		if (ugObsList.isEmpty())
+			return;
+
+		String bulkActionType = bulkAction.contains("ugBulkPosting") ? "posting"
+				: bulkAction.contains("ugBulkUnPosting") ? "unposting" : null;
+
+		if (bulkActionType == null)
+			return;
+
+		ugService = headers.addUserGroupHeader(ugService, requestAuthHeader);
+
+		try {
+			if ("posting".equals(bulkActionType)) {
+				BulkGroupPostingData data = new BulkGroupPostingData();
+				data.setRecordType("document");
+				data.setUgObvFilterDataList(ugObsList);
+				data.setUserGroupList(ugIds);
+				ugService.bulkPostingObservationUG(data);
+			} else {
+				BulkGroupUnPostingData data = new BulkGroupUnPostingData();
+				data.setRecordType("document");
+				data.setUgFilterDataList(ugObsList);
+				data.setUserGroupList(ugIds);
+				ugService.bulkRemovingObservation(data);
 			}
-
-			ugService = headers.addUserGroupHeader(ugService, requestAuthHeader);
-			try {
-				if (ugBulkPostingData != null) {
-					ugService.bulkPostingObservationUG(ugBulkPostingData);
-				} else if (ugBulkUnPostingData != null) {
-					ugService.bulkRemovingObservation(ugBulkUnPostingData);
-				}
-
-			} catch (com.strandls.userGroup.ApiException e) {
-				logger.error(e.getMessage());
-			}
-
-			List<Long> obsIds = ugObsList.stream().map(item -> item.getObservationId()).collect(Collectors.toList());
-			String observationList = StringUtils.join(obsIds, ',');
-			ESBulkUploadThread updateThread = new ESBulkUploadThread(esUpdate, observationList);
-			Thread esThreadUpdate = new Thread(updateThread);
-			esThreadUpdate.start();
-
+		} catch (com.strandls.userGroup.ApiException e) {
+			logger.error(e.getMessage());
 		}
+
+		List<Long> obsIds = ugObsList.stream().map(item -> item.getObservationId()).collect(Collectors.toList());
+		String observationList = StringUtils.join(obsIds, ',');
+		ESBulkUploadThread updateThread = new ESBulkUploadThread(esUpdate, observationList);
+		Thread esThreadUpdate = new Thread(updateThread);
+		esThreadUpdate.start();
+
+		new Thread(new ESBulkUploadThread(esUpdate, StringUtils.join(obsIds, ','))).start();
 	}
 }

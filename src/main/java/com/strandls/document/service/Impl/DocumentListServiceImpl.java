@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,18 +20,22 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.strandls.document.Headers;
 import com.strandls.document.es.util.DocumentIndex;
+import com.strandls.document.es.util.ESUpdate;
 import com.strandls.document.es.util.ESUtility;
 import com.strandls.document.pojo.DocumentListData;
 import com.strandls.document.pojo.DocumentMappingList;
 import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.document.service.DocumentListService;
+import com.strandls.document.util.DocumentBulkMappingThread;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.AggregationResponse;
 import com.strandls.esmodule.pojo.MapDocument;
 import com.strandls.esmodule.pojo.MapResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchQuery;
+import com.strandls.userGroup.controller.UserGroupSerivceApi;
 
 public class DocumentListServiceImpl implements DocumentListService {
 
@@ -44,6 +49,15 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 	@Inject
 	private ESUtility esUtility;
+	
+	@Inject
+	private UserGroupSerivceApi ugService;
+	
+	@Inject
+	private Headers headers;
+	
+	@Inject
+	private ESUpdate esUpdate;
 	
 	private final ExecutorService executor = Executors.newFixedThreadPool(20);
 
@@ -216,5 +230,16 @@ public class DocumentListServiceImpl implements DocumentListService {
 				.setGroupYearofPublication(mapAggResponse.get("document.year.keyword").getGroupAggregation());
 
 		return aggregationResponse;
+	}
+	
+	@Override
+	public void bulkAction(Boolean selectAll, String bulkAction, String bulkDocumentsIds, String bulkUsergroupIds,
+			MapSearchQuery mapSearchQuery, String index, String type, HttpServletRequest request) {
+		DocumentBulkMappingThread bulkMappingThread = new DocumentBulkMappingThread(selectAll, bulkAction,
+				bulkDocumentsIds, bulkUsergroupIds, mapSearchQuery, ugService, index, type, esService, request,
+				headers, objectMapper, esUpdate);
+
+		Thread thread = new Thread(bulkMappingThread);
+		thread.start();
 	}
 }

@@ -28,7 +28,6 @@ import javax.ws.rs.core.Response.Status;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
@@ -50,18 +49,13 @@ import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentListService;
 import com.strandls.document.service.DocumentService;
-import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapBoundParams;
 import com.strandls.esmodule.pojo.MapBounds;
 import com.strandls.esmodule.pojo.MapGeoPoint;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchParams.SortTypeEnum;
-import com.strandls.document.es.util.ESUpdate;
-import com.strandls.document.Headers;
-import com.strandls.document.util.DocumentBulkMappingThread;
 import com.strandls.esmodule.pojo.MapSearchQuery;
 import com.strandls.user.pojo.Follow;
-import com.strandls.userGroup.controller.UserGroupSerivceApi;
 import com.strandls.userGroup.pojo.Featured;
 import com.strandls.userGroup.pojo.FeaturedCreate;
 import com.strandls.userGroup.pojo.UserGroupIbp;
@@ -95,21 +89,6 @@ public class DocumentController {
 
 	@Inject
 	private ESUtility esUtility;
-	
-	@Inject
-	private UserGroupSerivceApi ugService;
-	
-	@Inject
-	private EsServicesApi esService;
-	
-	@Inject
-	private Headers headers;
-	
-	@Inject
-	private ObjectMapper objectMapper;
-	
-	@Inject
-	private ESUpdate esUpdate;
 
 	@GET
 	@Path(ApiConstants.PING)
@@ -798,11 +777,10 @@ public class DocumentController {
 			@DefaultValue("1") @QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
 			@ApiParam(name = "location") DocumentListParams location,
-			
-			@QueryParam("bulkAction") String bulkAction,
-			@QueryParam("selectAll") Boolean selectAll, @QueryParam("bulkUsergroupIds") String bulkUsergroupIds,
-			@QueryParam("bulkSpeciesIds") String bulkDocumentsIds,
-			@Context HttpServletRequest request) {
+
+			@QueryParam("bulkAction") String bulkAction, @QueryParam("selectAll") Boolean selectAll,
+			@QueryParam("bulkUsergroupIds") String bulkUsergroupIds,
+			@QueryParam("bulkSpeciesIds") String bulkDocumentsIds, @Context HttpServletRequest request) {
 		try {
 
 			if (max > 50) {
@@ -850,33 +828,25 @@ public class DocumentController {
 			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,
 					createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
 					revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
-			
-			if (view.equalsIgnoreCase("list")){
+
+			if (view.equalsIgnoreCase("list")) {
 				DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,
 						geoShapeFilterField, nestedField, aggregationResult, mapSearchQuery);
 
 				return Response.status(Status.OK).entity(result).build();
-			} else if ((Boolean.FALSE.equals(selectAll) && bulkDocumentsIds != null && !bulkAction.isEmpty()
-					&& !bulkDocumentsIds.isEmpty() && bulkUsergroupIds != null && !bulkUsergroupIds.isEmpty()
-					&& view.equalsIgnoreCase("bulkMapping"))
-					|| (Boolean.TRUE.equals(selectAll) && bulkUsergroupIds != null && !bulkUsergroupIds.isEmpty()
-							&& !bulkAction.isEmpty() && view.equalsIgnoreCase("bulkMapping"))) {
+			} else if (view.equalsIgnoreCase("bulkMapping")) {
 				mapSearchParams.setFrom(0);
 				mapSearchParams.setLimit(100000);
-				
+
 				if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
 					return Response.status(Status.BAD_REQUEST).build();
 				}
-				
-				DocumentBulkMappingThread bulkMappingThread = new DocumentBulkMappingThread(selectAll, bulkAction,
-						bulkDocumentsIds, bulkUsergroupIds, mapSearchQuery, ugService, index, type, esService, request,
-						headers, objectMapper, esUpdate);
 
-				Thread thread = new Thread(bulkMappingThread);
-				thread.start();
+				docListService.bulkAction(selectAll, bulkAction, bulkDocumentsIds, bulkUsergroupIds, mapSearchQuery,
+						index, type, request);
+
 				return Response.status(Status.OK).build();
-				
-				
+
 			}
 			return Response.status(Status.OK).build();
 		} catch (Exception e) {

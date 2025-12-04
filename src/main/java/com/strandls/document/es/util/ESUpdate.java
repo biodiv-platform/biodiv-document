@@ -22,12 +22,11 @@ public class ESUpdate {
 
 	@Inject
 	private EsServicesApi esService;
-	
+
 	@Inject
 	private UserGroupSerivceApi ugService;
 
-
-	public void updateESInstance(String documentId,String documentData) {
+	public void updateESInstance(String documentId, String documentData) {
 		try {
 			System.out.println("--------------------document es Update---------");
 			System.out.println();
@@ -47,7 +46,7 @@ public class ESUpdate {
 		}
 
 	}
-	
+
 	public void esBulkUpload(String documentIds) {
 
 		if (documentIds == null || documentIds.isEmpty()) {
