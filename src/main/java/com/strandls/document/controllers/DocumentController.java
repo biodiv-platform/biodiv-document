@@ -70,6 +70,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -759,7 +760,12 @@ public class DocumentController {
 			@QueryParam("title") String title,
 
 			@DefaultValue("1") @QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
-			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation, DocumentListParams location) {
+			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
+			DocumentListParams location,
+
+			@QueryParam("bulkAction") String bulkAction, @QueryParam("selectAll") Boolean selectAll,
+			@QueryParam("bulkUsergroupIds") String bulkUsergroupIds,
+			@QueryParam("bulkSpeciesIds") String bulkDocumentsIds, @Context HttpServletRequest request) {
 		try {
 
 			if (max > 50) {
@@ -808,10 +814,26 @@ public class DocumentController {
 					createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
 					revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
 
-			DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,
-					geoShapeFilterField, nestedField, aggregationResult, mapSearchQuery);
+			if (view.equalsIgnoreCase("list")) {
+				DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,
+						geoShapeFilterField, nestedField, aggregationResult, mapSearchQuery);
 
-			return Response.status(Status.OK).entity(result).build();
+				return Response.status(Status.OK).entity(result).build();
+			} else if (view.equalsIgnoreCase("bulkMapping")) {
+				mapSearchParams.setFrom(0);
+				mapSearchParams.setLimit(100000);
+
+				if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
+					return Response.status(Status.BAD_REQUEST).build();
+				}
+
+				docListService.bulkAction(selectAll, bulkAction, bulkDocumentsIds, bulkUsergroupIds, mapSearchQuery,
+						index, type, request);
+
+				return Response.status(Status.OK).build();
+
+			}
+			return Response.status(Status.OK).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}

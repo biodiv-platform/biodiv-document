@@ -5,6 +5,8 @@ import com.strandls.document.pojo.MapAggregationResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchQuery;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 public interface DocumentListService {
 
 	public DocumentListData getDocumentList(String index, String type, String geoAggregationField,
@@ -16,5 +18,8 @@ public interface DocumentListService {
 			String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate, String state,
 			String itemType, String year, String author, String publisher, String title, String geoShapeFilterField,
 			MapSearchParams mapSearchParams);
+
+	public void bulkAction(Boolean selectAll, String bulkAction, String bulkDocumentsIds, String bulkUsergroupIds,
+			MapSearchQuery mapSearchQuery, String index, String type, HttpServletRequest request);
 
 }
