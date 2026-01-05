@@ -6,9 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +22,13 @@ import com.strandls.document.Headers;
 import com.strandls.document.es.util.ESBulkUploadThread;
 import com.strandls.document.es.util.ESUpdate;
 import com.strandls.document.pojo.DocumentMappingList;
-import com.strandls.userGroup.controller.UserGroupSerivceApi;
+import com.strandls.userGroup.controller.UserGroupServiceApi;
 import com.strandls.userGroup.pojo.BulkGroupPostingData;
 import com.strandls.userGroup.pojo.BulkGroupUnPostingData;
 import com.strandls.userGroup.pojo.UserGroupObvFilterData;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
 
 public class DocumentBulkMappingThread implements Runnable {
 
@@ -39,7 +39,7 @@ public class DocumentBulkMappingThread implements Runnable {
 	private String bulkDocumentIds;
 	private String bulkUsergroupIds;
 	private MapSearchQuery mapSearchQuery;
-	private UserGroupSerivceApi ugService;
+	private UserGroupServiceApi ugService;
 	private String index;
 	private String type;
 	private EsServicesApi esService;
@@ -49,7 +49,7 @@ public class DocumentBulkMappingThread implements Runnable {
 	private final String requestAuthHeader;
 
 	public DocumentBulkMappingThread(Boolean selectAll, String bulkAction, String bulkDocumentIds,
-			String bulkUsergroupIds, MapSearchQuery mapSearchQuery, UserGroupSerivceApi ugService, String index,
+			String bulkUsergroupIds, MapSearchQuery mapSearchQuery, UserGroupServiceApi ugService, String index,
 			String type, EsServicesApi esService, HttpServletRequest request, Headers headers,
 			ObjectMapper objectMapper, ESUpdate esUpdate) {
 		super();
