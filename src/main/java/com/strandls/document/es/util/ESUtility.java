@@ -25,23 +25,19 @@ import com.strandls.esmodule.pojo.MapSearchQuery;
 
 /**
  * 
- * @author vishnu
+ * @author arun
  *
  */
-
 public class ESUtility {
-	private Logger logger = LoggerFactory.getLogger(ESUtility.class);
+	private final Logger logger = LoggerFactory.getLogger(ESUtility.class);
 
 	private List<Object> cSTSOT(String str) {
-		if (str == null || str.matches("") || str.isEmpty())
-			return new ArrayList<Object>();
+		if (str == null || str.isBlank())
+			return new ArrayList<>();
 
 		String[] y = str.split(",");
-		Set<Object> strSet1 = Arrays.stream(y).collect(Collectors.toSet());
-		List<Object> strList = new ArrayList<Object>();
-		strList.addAll(strSet1);
-		return strList;
-
+		Set<Object> strSet1 = Arrays.stream(y).filter(s -> !s.isBlank()).collect(Collectors.toSet());
+		return new ArrayList<>(strSet1);
 	}
 
 	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values) {
@@ -49,7 +45,6 @@ public class ESUtility {
 		andBool.setKey(key);
 		andBool.setValues(values);
 		return andBool;
-
 	}
 
 	private MapAndMatchPhraseQuery assignAndMatchPhrase(String key, String value) {
@@ -75,36 +70,37 @@ public class ESUtility {
 		return andRange;
 	}
 
-	// for comma separated string ids
-	private void assignOrMatchPhraseArray(String ids, String key, List<MapOrMatchPhraseQuery> orMatchPhraseQueriesnew) {
+	private void assignOrMatchPhraseArray(String ids, String key, List<MapOrMatchPhraseQuery> queries) {
+		if (ids == null || ids.isBlank())
+			return;
 		String[] list = ids.split(",");
 		for (String o : list) {
-			orMatchPhraseQueriesnew.add(assignOrMatchPhrase(key, o));
+			queries.add(assignOrMatchPhrase(key, o.trim()));
 		}
 	}
 
 	public List<MapGeoPoint> polygonGenerator(String locationArray) {
-		List<MapGeoPoint> polygon = new ArrayList<MapGeoPoint>();
-		double[] point = Stream.of(locationArray.split(",")).mapToDouble(Double::parseDouble).toArray();
-		for (int i = 0; i < point.length; i = i + 2) {
-			String singlePoint = point[i + 1] + "," + point[i];
-			int comma = singlePoint.indexOf(',');
-			if (comma != -1) {
+		List<MapGeoPoint> polygon = new ArrayList<>();
+		try {
+			double[] points = Stream.of(locationArray.split(",")).mapToDouble(Double::parseDouble).toArray();
+			for (int i = 0; i < points.length; i = i + 2) {
 				MapGeoPoint geoPoint = new MapGeoPoint();
-				geoPoint.setLat(Double.parseDouble(singlePoint.substring(0, comma).trim()));
-				geoPoint.setLon(Double.parseDouble(singlePoint.substring(comma + 1).trim()));
+				geoPoint.setLat(points[i + 1]);
+				geoPoint.setLon(points[i]);
 				polygon.add(geoPoint);
 			}
+		} catch (Exception e) {
+			logger.error("Error generating polygon: {}", e.getMessage());
 		}
 		return polygon;
 	}
 
 	public List<List<MapGeoPoint>> multiPolygonGenerator(String[] locationArray) {
-		List<List<MapGeoPoint>> mutlipolygon = new ArrayList<>();
-		for (int j = 0; j < locationArray.length; j++) {
-			mutlipolygon.add(polygonGenerator(locationArray[j]));
+		List<List<MapGeoPoint>> multipolygon = new ArrayList<>();
+		for (String loc : locationArray) {
+			multipolygon.add(polygonGenerator(loc));
 		}
-		return mutlipolygon;
+		return multipolygon;
 	}
 
 	public MapSearchQuery getMapSearchQuery(String sGroup, String habitatIds, String tags, String user, String flags,
@@ -113,25 +109,21 @@ public class ESUtility {
 			String publisher, String title, MapSearchParams mapSearchParams) {
 
 		MapSearchQuery mapSearchQuery = new MapSearchQuery();
-		List<MapAndBoolQuery> boolAndLists = new ArrayList<MapAndBoolQuery>();
-		List<MapOrBoolQuery> boolOrLists = new ArrayList<MapOrBoolQuery>();
-		List<MapOrRangeQuery> rangeOrLists = new ArrayList<MapOrRangeQuery>();
-		List<MapAndRangeQuery> rangeAndLists = new ArrayList<MapAndRangeQuery>();
-		List<MapExistQuery> andMapExistQueries = new ArrayList<MapExistQuery>();
-		List<MapAndMatchPhraseQuery> andMatchPhraseQueries = new ArrayList<MapAndMatchPhraseQuery>();
-		List<MapOrMatchPhraseQuery> orMatchPhraseQueriesnew = new ArrayList<MapOrMatchPhraseQuery>();
+		List<MapAndBoolQuery> boolAndLists = new ArrayList<>();
+		List<MapOrBoolQuery> boolOrLists = new ArrayList<>();
+		List<MapOrRangeQuery> rangeOrLists = new ArrayList<>();
+		List<MapAndRangeQuery> rangeAndLists = new ArrayList<>();
+		List<MapExistQuery> andMapExistQueries = new ArrayList<>();
+		List<MapAndMatchPhraseQuery> andMatchPhraseQueries = new ArrayList<>();
+		List<MapOrMatchPhraseQuery> orMatchPhraseQueriesnew = new ArrayList<>();
 
 		try {
-
 //			tags
 			List<Object> tagsList = cSTSOT(tags);
 			if (!tagsList.isEmpty()) {
-				List<Object> lowerCaseList = new ArrayList<Object>();
-				for (Object o : tagsList) {
-					String result = o.toString().toLowerCase();
-					lowerCaseList.add(result);
-				}
-				boolAndLists.add(assignBoolAndQuery(DocumentIndex.TAGS.getValue(), lowerCaseList));
+				List<Object> lowerCaseTags = tagsList.stream().map(o -> o.toString().toLowerCase())
+						.collect(Collectors.toList());
+				boolAndLists.add(assignBoolAndQuery(DocumentIndex.TAGS.getValue(), lowerCaseTags));
 			}
 
 //			userGroupList
@@ -141,30 +133,18 @@ public class ESUtility {
 			}
 
 //			speciesGroupList
-			if (sGroup.length() >= 1) {
+			if (sGroup != null && sGroup.length() >= 1) {
 				assignOrMatchPhraseArray(sGroup, DocumentIndex.SGROUP.getValue(), orMatchPhraseQueriesnew);
 			}
 //			habitatId List
-			if (habitatIds.length() >= 1) {
+			if (habitatIds != null && habitatIds.length() >= 1) {
 				assignOrMatchPhraseArray(habitatIds, DocumentIndex.HABITATIDS.getValue(), orMatchPhraseQueriesnew);
 			}
-//			tags
-			List<Object> tagList = cSTSOT(tags);
-			if (!tagList.isEmpty()) {
-				boolAndLists.add(assignBoolAndQuery(DocumentIndex.TAGS.getValue(), tagList));
-			}
 
-//			featured
-			List<Object> featuredList = cSTSOT(featured);
-			if (!featuredList.isEmpty()) {
-				boolAndLists.add(assignBoolAndQuery(DocumentIndex.FEATURED.getValue(), featuredList));
-			}
+			// Featured & Flags
+			addSimpleBool(boolAndLists, DocumentIndex.FEATURED.getValue(), featured);
+			addSimpleBool(boolAndLists, DocumentIndex.FLAG.getValue(), flags);
 
-//			flags
-			List<Object> flagList = cSTSOT(flags);
-			if (!flagList.isEmpty()) {
-				boolAndLists.add(assignBoolAndQuery(DocumentIndex.FLAG.getValue(), flagList));
-			}
 //			user
 			List<Object> authorId = cSTSOT(user);
 			if (!authorId.isEmpty()) {
@@ -172,137 +152,41 @@ public class ESUtility {
 			}
 
 //			Data Quality:- Flagged
-			List<Object> flagged = cSTSOT(isFlagged);
-			if (!flagged.isEmpty()) {
-
-				if (flagged.size() < 2) {
-					String first = (String) flagged.toArray()[0];
-					if (first.equalsIgnoreCase("1")) {
-						rangeAndLists
-								.add(assignAndRange(DocumentIndex.FLAGCOUNT.getValue(), first, Long.MAX_VALUE, null));
-					}
-					if (first.equalsIgnoreCase("0")) {
-						rangeAndLists.add(assignAndRange(DocumentIndex.FLAGCOUNT.getValue(), first, first, null));
-					}
-
+			List<Object> flaggedList = cSTSOT(isFlagged);
+			if (!flaggedList.isEmpty() && flaggedList.size() < 2) {
+				String first = (String) flaggedList.get(0);
+				if (first.equalsIgnoreCase("1")) {
+					rangeAndLists.add(assignAndRange(DocumentIndex.FLAGCOUNT.getValue(), 1, null, null));
+				} else if (first.equalsIgnoreCase("0")) {
+					rangeAndLists.add(assignAndRange(DocumentIndex.FLAGCOUNT.getValue(), 0, 0, null));
 				}
 			}
 
-//			Created on
-			String createdOnMaxDateValue = null;
-			String createdOnMinDateValue = null;
-			Date date = new Date();
-			SimpleDateFormat out = new SimpleDateFormat("YYYY-MM-dd");
-			try {
-				if (createdOnMinDate != null) {
-					createdOnMinDateValue = createdOnMinDate;
-				}
-				if (createdOnMaxDate != null) {
-					createdOnMaxDateValue = createdOnMaxDate;
-				}
-			} catch (Exception e) {
-				logger.error(e.getMessage());
-			}
-			if (createdOnMinDateValue != null && createdOnMaxDateValue != null) {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			String today = sdf.format(new Date());
 
-				rangeAndLists.add(assignAndRange(DocumentIndex.CREATEDON.getValue(), createdOnMinDateValue,
-						createdOnMaxDateValue, null));
-			}
-			if (createdOnMinDateValue != null && createdOnMaxDateValue == null) {
-				rangeAndLists.add(assignAndRange(DocumentIndex.CREATEDON.getValue(), createdOnMinDateValue,
-						out.format(date), null));
-			}
-			if (createdOnMinDateValue == null && createdOnMaxDateValue != null) {
-				rangeAndLists.add(assignAndRange(DocumentIndex.CREATEDON.getValue(), out.format(date),
-						createdOnMaxDateValue, null));
-			}
+			// Created On
+			handleDateRange(rangeAndLists, DocumentIndex.CREATEDON.getValue(), createdOnMinDate, createdOnMaxDate,
+					today);
 
-//			revised on
+			// Revised On
+			handleDateRange(rangeAndLists, DocumentIndex.LASTREVISED.getValue(), revisedOnMinDate, revisedOnMaxDate,
+					today);
 
-			String revisedOnMaxDateValue = null;
-			String revisedOnMinDateValue = null;
-
-			try {
-				if (revisedOnMinDate != null) {
-					revisedOnMinDateValue = revisedOnMinDate;
-				}
-				if (revisedOnMaxDate != null) {
-					revisedOnMaxDateValue = revisedOnMaxDate;
-				}
-			} catch (Exception e) {
-				logger.error(e.getMessage());
-			}
-			if (revisedOnMinDateValue != null && revisedOnMaxDateValue != null) {
-
-				rangeAndLists.add(assignAndRange(DocumentIndex.LASTREVISED.getValue(), revisedOnMaxDateValue,
-						revisedOnMinDateValue, null));
-			}
-			if (revisedOnMinDateValue != null && revisedOnMaxDateValue == null) {
-				rangeAndLists.add(assignAndRange(DocumentIndex.LASTREVISED.getValue(), out.format(date),
-						revisedOnMinDateValue, null));
-			}
-			if (revisedOnMinDateValue == null && revisedOnMaxDateValue != null) {
-				rangeAndLists.add(assignAndRange(DocumentIndex.LASTREVISED.getValue(), revisedOnMaxDateValue,
-						out.format(date), null));
-			}
-
-//			state
+			// State (Normalization)
 			List<Object> stateList = cSTSOT(state);
 			if (!stateList.isEmpty()) {
-				List<Object> lowerCaseList = new ArrayList<Object>();
-				for (Object o : stateList) {
-					String result = o.toString();
-					lowerCaseList.add(result);
-				}
-
-				boolAndLists.add(assignBoolAndQuery(DocumentIndex.STATE.getValue(), lowerCaseList));
+				boolAndLists.add(assignBoolAndQuery(DocumentIndex.STATE.getValue(), stateList));
 			}
 
-			// title
-			List<Object> titleList = cSTSOT(title);
-			if (!titleList.isEmpty()) {
-				for (Object o : titleList) {
-					String result = o.toString().toLowerCase();
-					andMatchPhraseQueries.add(assignAndMatchPhrase(DocumentIndex.TITLE.getValue(), result));
-				}
-			}
+			// Title, Year, Publisher, Author, ItemType (Match Phrases)
+			addAndMatchPhrase(andMatchPhraseQueries, DocumentIndex.TITLE.getValue(), title);
+			addAndMatchPhrase(andMatchPhraseQueries, DocumentIndex.YEAROFPUBLICATION.getValue(), year);
+			addOrMatchPhrase(orMatchPhraseQueriesnew, DocumentIndex.PUBLISHER.getValue(), publisher);
+			addOrMatchPhrase(orMatchPhraseQueriesnew, DocumentIndex.AUTHOR.getValue(), author);
+			addOrMatchPhrase(orMatchPhraseQueriesnew, DocumentIndex.ITEMTYPE.getValue(), itemType);
 
-			List<Object> yearList = cSTSOT(year);
-			if (!yearList.isEmpty()) {
-				for (Object o : yearList) {
-					String result = o.toString().toLowerCase();
-					andMatchPhraseQueries.add(assignAndMatchPhrase(DocumentIndex.YEAROFPUBLICATION.getValue(), result));
-				}
-			}
-
-			List<Object> publisherList = cSTSOT(publisher);
-			if (!publisherList.isEmpty()) {
-				for (Object o : publisherList) {
-					String result = o.toString().toLowerCase();
-					orMatchPhraseQueriesnew.add(assignOrMatchPhrase(DocumentIndex.PUBLISHER.getValue(), result));
-				}
-			}
-
-			List<Object> authorList = cSTSOT(author);
-			if (!authorList.isEmpty()) {
-				for (Object o : authorList) {
-					String result = o.toString().toLowerCase();
-					orMatchPhraseQueriesnew.add(assignOrMatchPhrase(DocumentIndex.AUTHOR.getValue(), result));
-				}
-			}
-
-			List<Object> itemTypeList = cSTSOT(itemType);
-			if (!itemTypeList.isEmpty()) {
-				for (Object o : itemTypeList) {
-					String result = o.toString().toLowerCase();
-					orMatchPhraseQueriesnew.add(assignOrMatchPhrase(DocumentIndex.ITEMTYPE.getValue(), result));
-				}
-			}
-
-			/**
-			 * combine all the queries
-			 * 
-			 */
+			// Finalize
 			mapSearchQuery.setAndBoolQueries(boolAndLists);
 			mapSearchQuery.setOrBoolQueries(boolOrLists);
 			mapSearchQuery.setAndRangeQueries(rangeAndLists);
@@ -312,10 +196,37 @@ public class ESUtility {
 			mapSearchQuery.setOrMatchPhraseQueries(orMatchPhraseQueriesnew);
 
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("Error in getMapSearchQuery: ", e);
 		}
 		mapSearchQuery.setSearchParams(mapSearchParams);
 		return mapSearchQuery;
+	}
 
+	// Helper Methods for Cleaner Logic
+	private void addSimpleBool(List<MapAndBoolQuery> list, String key, String rawValues) {
+		List<Object> values = cSTSOT(rawValues);
+		if (!values.isEmpty()) {
+			list.add(assignBoolAndQuery(key, values));
+		}
+	}
+
+	private void addAndMatchPhrase(List<MapAndMatchPhraseQuery> list, String key, String rawValues) {
+		List<Object> values = cSTSOT(rawValues);
+		for (Object o : values) {
+			list.add(assignAndMatchPhrase(key, o.toString().toLowerCase()));
+		}
+	}
+
+	private void addOrMatchPhrase(List<MapOrMatchPhraseQuery> list, String key, String rawValues) {
+		List<Object> values = cSTSOT(rawValues);
+		for (Object o : values) {
+			list.add(assignOrMatchPhrase(key, o.toString().toLowerCase()));
+		}
+	}
+
+	private void handleDateRange(List<MapAndRangeQuery> list, String key, String min, String max, String fallback) {
+		if (min != null || max != null) {
+			list.add(assignAndRange(key, (min != null ? min : fallback), (max != null ? max : fallback), null));
+		}
 	}
 }
