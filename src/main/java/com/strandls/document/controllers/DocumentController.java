@@ -22,7 +22,6 @@ import com.strandls.document.pojo.DocSciName;
 import com.strandls.document.pojo.DocumentCreateData;
 import com.strandls.document.pojo.DocumentEditData;
 import com.strandls.document.pojo.DocumentListData;
-import com.strandls.document.pojo.DocumentListParams;
 import com.strandls.document.pojo.DocumentMeta;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
@@ -696,9 +695,8 @@ public class DocumentController {
 		}
 	}
 
-	@POST
+	@GET
 	@Path(ApiConstants.LIST + "/{index}/{type}")
-	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Operation(summary = "Fetch document list with filters", description = "Returns a list of documents based on various filters and pagination", parameters = {
 			@Parameter(name = "index", description = "Index to query", required = true),
@@ -733,7 +731,8 @@ public class DocumentController {
 			@Parameter(name = "publisher", description = "Publisher filter"),
 			@Parameter(name = "title", description = "Title filter"),
 			@Parameter(name = "geoAggegationPrecision", description = "Precision for geo aggregation", example = "1"),
-			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false") }, requestBody = @RequestBody(required = false, content = @Content(schema = @Schema(implementation = DocumentListParams.class))), responses = {
+			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false"),
+			@Parameter(name = "location", description = "Location filter") }, responses = {
 					@ApiResponse(responseCode = "200", description = "List of documents returned", content = @Content(schema = @Schema(implementation = DocumentListData.class))),
 					@ApiResponse(responseCode = "400", description = "Error occurred during document list fetch") })
 	public Response DocumentList(@PathParam("index") String index, @PathParam("type") String type,
@@ -761,7 +760,7 @@ public class DocumentController {
 
 			@DefaultValue("1") @QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
-			DocumentListParams location,
+			@DefaultValue("") @QueryParam("location") String location,
 
 			@QueryParam("bulkAction") String bulkAction, @QueryParam("selectAll") Boolean selectAll,
 			@QueryParam("bulkUsergroupIds") String bulkUsergroupIds,
@@ -790,14 +789,13 @@ public class DocumentController {
 			mapSearchParams.setSortType(SortTypeEnum.DESC);
 			mapSearchParams.setMapBoundParams(mapBoundsParams);
 
-			String loc = location.getLocation();
-			if (loc != null) {
-				if (loc.contains("/")) {
-					String[] locationArray = loc.split("/");
+			if (location != null && !location.isEmpty()) {
+				if (location.contains("/")) {
+					String[] locationArray = location.split("/");
 					List<List<MapGeoPoint>> multiPolygonPoint = esUtility.multiPolygonGenerator(locationArray);
 					mapBoundsParams.setMultipolygon(multiPolygonPoint);
 				} else {
-					mapBoundsParams.setPolygon(esUtility.polygonGenerator(loc));
+					mapBoundsParams.setPolygon(esUtility.polygonGenerator(location));
 				}
 			}
 
