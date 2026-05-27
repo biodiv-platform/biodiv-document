@@ -19,6 +19,12 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.hibernate.SessionFactory;
@@ -101,6 +107,14 @@ public class DocumentServeletContextListener extends GuiceServletContextListener
 
 				ObjectMapper objectMapper = new ObjectMapper();
 				bind(ObjectMapper.class).toInstance(objectMapper);
+
+//				Create and bind ExecutorService for managing thread pools
+				ExecutorService executorService = Executors.newFixedThreadPool(20);
+				bind(ExecutorService.class).toInstance(executorService);
+
+//				Create and bind CloseableHttpClient for HTTP operations
+				CloseableHttpClient httpClient = HttpClients.createDefault();
+				bind(CloseableHttpClient.class).toInstance(httpClient);
 
 				bind(SessionFactory.class).toInstance(sessionFactory);
 				bind(Headers.class).in(Scopes.SINGLETON);
@@ -185,6 +199,36 @@ public class DocumentServeletContextListener extends GuiceServletContextListener
 			channel.getConnection().close();
 		} catch (IOException e) {
 			logger.error(e.getMessage());
+		}
+
+//		Shutdown ExecutorService to prevent thread pool memory leaks
+		ExecutorService executorService = injector.getInstance(ExecutorService.class);
+		if (executorService != null && !executorService.isShutdown()) {
+			logger.info("Shutting down ExecutorService...");
+			executorService.shutdown();
+			try {
+				if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+					logger.warn("ExecutorService did not terminate in time, forcing shutdown");
+					executorService.shutdownNow();
+				}
+				logger.info("ExecutorService shutdown completed");
+			} catch (InterruptedException e) {
+				logger.error("Error during ExecutorService shutdown", e);
+				executorService.shutdownNow();
+				Thread.currentThread().interrupt();
+			}
+		}
+
+//		Close CloseableHttpClient to prevent connection pool memory leaks
+		CloseableHttpClient httpClient = injector.getInstance(CloseableHttpClient.class);
+		if (httpClient != null) {
+			try {
+				logger.info("Closing HTTP client...");
+				httpClient.close();
+				logger.info("HTTP client closed");
+			} catch (IOException e) {
+				logger.error("Error closing HTTP client", e);
+			}
 		}
 
 		super.contextDestroyed(servletContextEvent);

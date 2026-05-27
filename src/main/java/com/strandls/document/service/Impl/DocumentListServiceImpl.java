@@ -45,7 +45,8 @@ public class DocumentListServiceImpl implements DocumentListService {
 	@Inject
 	private ESUtility esUtility;
 
-	private final ExecutorService executor = Executors.newFixedThreadPool(20);
+	@Inject
+	private ExecutorService executor;
 
 	@Override
 	public DocumentListData getDocumentList(String index, String type, String geoAggregationField,

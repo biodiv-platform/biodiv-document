@@ -3,6 +3,8 @@
  */
 package com.strandls.document.es.util;
 
+import java.util.concurrent.ExecutorService;
+
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
@@ -24,6 +26,9 @@ public class RabbitMQConsumer {
 	@Inject
 	private Channel channel;
 
+	@Inject
+	private ExecutorService executorService;
+
 	public void elasticUpdate() throws Exception {
 		DeliverCallback deliverCallback = (consumerTag, delivery) -> {
 			String message = new String(delivery.getBody(), "UTF-8");
@@ -33,9 +38,8 @@ public class RabbitMQConsumer {
 			System.out.println("consuming document Id :" + message);
 			System.out.println("Updating :" + documentId);
 
-			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, message, documentId);
-			Thread thread = new Thread(updateThread);
-			thread.start();
+			// Use managed ExecutorService instead of creating unmanaged threads
+			executorService.submit(new ESUpdateThread(esUpdate, message, documentId));
 
 		};
 		channel.basicConsume(DOCUMENT_QUEUE, true, deliverCallback, consumerTag -> {

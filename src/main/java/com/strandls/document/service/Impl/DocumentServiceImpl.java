@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
@@ -144,7 +145,13 @@ import net.minidev.json.JSONArray;
 public class DocumentServiceImpl implements DocumentService {
 
 	private final Logger logger = LoggerFactory.getLogger(DocumentServiceImpl.class);
-	private final CloseableHttpClient httpClient = HttpClients.createDefault();
+
+	@Inject
+	private CloseableHttpClient httpClient;
+
+	@Inject
+	private ExecutorService executorService;
+
 	@Inject
 	private DocumentDao documentDao;
 
@@ -473,9 +480,8 @@ public class DocumentServiceImpl implements DocumentService {
 			if (documentCreateData.getExternalUrl() != null && documentCreateData.getExternalUrl().startsWith("http")) {
 				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
 			}
-			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
-			Thread thread = new Thread(updateThread);
-			thread.start();
+			// Use managed ExecutorService instead of creating unmanaged threads
+			executorService.submit(new ESUpdateThread(esUpdate, docString, document.getId().toString()));
 			return res;
 		} catch (
 
