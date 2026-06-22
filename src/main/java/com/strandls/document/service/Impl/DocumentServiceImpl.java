@@ -1597,27 +1597,23 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 
 	}
-	
+
 	private boolean isUrlAccessible(String url) {
-	    try {
-	        HttpHead request = new HttpHead(url);
-	        request.setConfig(RequestConfig.custom()
-	            .setConnectTimeout(5000)
-	            .setSocketTimeout(5000)
-	            .build());
-	        try (CloseableHttpResponse response = httpClient.execute(request)) {
-	            int statusCode = response.getStatusLine().getStatusCode();
-	            return statusCode >= 200 && statusCode < 400;
-	        }
-	    } catch (Exception e) {
-	        logger.warn("URL not accessible, skipping GNFinder: {}", url);
-	        return false;
-	    }
+		try {
+			HttpHead request = new HttpHead(url);
+			request.setConfig(RequestConfig.custom().setConnectTimeout(5000).setSocketTimeout(5000).build());
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+				int statusCode = response.getStatusLine().getStatusCode();
+				return statusCode >= 200 && statusCode < 400;
+			}
+		} catch (Exception e) {
+			logger.warn("URL not accessible, skipping GNFinder: {}", url);
+			return false;
+		}
 	}
 
 	@Override
 	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
-		System.setProperty("java.net.preferIPv4Stack", "true");
 
 		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
 		String serverUrl = properties.getProperty("serverUrl");
@@ -1626,20 +1622,18 @@ public class DocumentServiceImpl implements DocumentService {
 		String basePath = properties.getProperty("baseDocPath");
 		// external URL scientific name parsing
 		String completeFileUrl = filePath.startsWith("http") ? filePath : serverUrl + "/" + basePath + filePath;
-		
+
 		if (!isUrlAccessible(completeFileUrl)) {
-	        logger.warn("Skipping GNFinder — file not accessible: {}", completeFileUrl);
-	        return null;
-	    }
+			logger.warn("Skipping GNFinder — file not accessible: {}", completeFileUrl);
+			return null;
+		}
 
 		URIBuilder builder = new URIBuilder();
-		builder.setScheme("http").setHost("127.0.0.1:3006").setPath("/parse")
-		       .setParameter("file", completeFileUrl);
+		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
 
 		URI uri = null;
 		try {
 			uri = builder.build();
-			logger.info("GNFinder URL: {}", uri.toString()); 
 			HttpGet request = new HttpGet(uri);
 
 			try (CloseableHttpResponse response = httpClient.execute(request)) {
@@ -1780,46 +1774,11 @@ public class DocumentServiceImpl implements DocumentService {
 
 	}
 
-	public void handleTaxonByName(TaxonomyUpdateData message) {
-		System.out.println("Inside recalculation");
-		if (message.getBulkIds() != null) {
-			System.out.println("Inside bulk");
+	public void handleTaxonByName(TaxonomyUpdateData updateData) {
+		// Rerun for document with ids to merge
+		if (updateData.getBulkIds() != null) {
 			try {
-				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(message.getBulkIds());
-				List<Document> documents = documentDao.findByBulkIds(documentIds);
-				for (Document doc : documents) {
-					UFile ufile = null;
-					if (doc.getuFileId() != null)
-						ufile = resourceService.getUFilePath(doc.getuFileId().toString());
-					updateScienticNames(doc.getId(), ufile, doc.getExternalUrl());
-					
-				}
-			} catch (com.strandls.resource.ApiException e) {
-				e.printStackTrace();
-			}
-		}
-
-		if (message.getDeleteRecoIds() != null) {
-			System.out.println("Inside deleteNameDao");
-			try {
-				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(message.getDeleteRecoIds());
-				List<Document> documents = documentDao.findByBulkIds(documentIds);
-				for (Document doc : documents) {
-					UFile ufile = null;
-					if (doc.getuFileId() != null)
-						ufile = resourceService.getUFilePath(doc.getuFileId().toString());
-					updateScienticNames(doc.getId(), ufile, doc.getExternalUrl());
-					
-				}
-			} catch (com.strandls.resource.ApiException e) {
-				e.printStackTrace();
-			}
-		}
-
-		if (!Objects.equals(message.getOldName(), message.getName())) {
-			System.out.println("Inside namechange");
-			try {
-				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(List.of(message.getTargetId()));
+				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(updateData.getBulkIds());
 				List<Document> documents = documentDao.findByBulkIds(documentIds);
 				for (Document doc : documents) {
 					UFile resource = null;
@@ -1832,7 +1791,53 @@ public class DocumentServiceImpl implements DocumentService {
 						logger.info("No uFileId found for document");
 					}
 					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
-					
+				}
+			} catch (com.strandls.resource.ApiException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Rerun for deleted
+		if (updateData.getDeleteRecoIds() != null) {
+			try {
+				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(updateData.getDeleteRecoIds());
+				List<Document> documents = documentDao.findByBulkIds(documentIds);
+				for (Document doc : documents) {
+					UFile resource = null;
+					if (doc.getuFileId() != null) {
+						logger.info("Fetching resource for uFileId: {}", doc.getuFileId());
+						resource = resourceService.getUFilePath(doc.getuFileId().toString());
+						resource.setPath(resource.getPath().replace("/documents", ""));
+						logger.info("Retrieved and updated resource path");
+					} else {
+						logger.info("No uFileId found for document");
+					}
+					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
+
+				}
+			} catch (com.strandls.resource.ApiException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Rerun on nameChange
+		if (!Objects.equals(updateData.getOldName(), updateData.getName())) {
+			try {
+				List<Long> documentIds = docSciNameDao
+						.getDocumentIdsByTaxonConceptIds(List.of(updateData.getTargetId()));
+				List<Document> documents = documentDao.findByBulkIds(documentIds);
+				for (Document doc : documents) {
+					UFile resource = null;
+					if (doc.getuFileId() != null) {
+						logger.info("Fetching resource for uFileId: {}", doc.getuFileId());
+						resource = resourceService.getUFilePath(doc.getuFileId().toString());
+						resource.setPath(resource.getPath().replace("/documents", ""));
+						logger.info("Retrieved and updated resource path");
+					} else {
+						logger.info("No uFileId found for document");
+					}
+					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
+
 				}
 			} catch (com.strandls.resource.ApiException e) {
 				e.printStackTrace();

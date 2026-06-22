@@ -26,8 +26,8 @@ public class RabbitMqConnection {
 
 	private final static String DOCUMENT_QUEUE = "documentQueue";
 	private final static String ROUTING_DOCUMENT = "document";
-	
-	public static final String DOCSCI_QUEUE       = "docSciQueue";
+
+	public static final String DOCSCI_QUEUE = "docSciQueue";
 	public static final String DOCSCI_ROUTING_KEY = "docSci.updated";
 
 	public final static String EXCHANGE_BIODIV;

@@ -20,17 +20,17 @@ import jakarta.inject.Inject;
 public class RabbitMQConsumer {
 
 	private final static String DOCUMENT_QUEUE = "documentQueue";
-	public static final String DOCSCI_QUEUE       = "docSciQueue";
+	public static final String DOCSCI_QUEUE = "docSciQueue";
 
 	@Inject
 	private ESUpdate esUpdate;
-	
+
 	@Inject
 	private DocumentServiceImpl docService;
 
 	@Inject
 	private Channel channel;
-	
+
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	public void elasticUpdate() throws Exception {
@@ -50,19 +50,20 @@ public class RabbitMQConsumer {
 		channel.basicConsume(DOCUMENT_QUEUE, true, deliverCallback, consumerTag -> {
 		});
 	}
-	
+
 	public void listenToTaxonomyEvents() throws Exception {
-        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println("----[DOCUMENT EVENT]----");
-            System.out.println("Received: " + message);
-            TaxonomyUpdateData event = objectMapper.readValue(message,  TaxonomyUpdateData.class); 
+		DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+			String message = new String(delivery.getBody(), "UTF-8");
+			System.out.println("----[DOCUMENT EVENT]----");
+			System.out.println("Received: " + message);
+			TaxonomyUpdateData event = objectMapper.readValue(message, TaxonomyUpdateData.class);
 
-            docService.handleTaxonByName(event);
+			docService.handleTaxonByName(event);
 
-        };
+		};
 
-        channel.basicConsume(DOCSCI_QUEUE, true, deliverCallback, consumerTag -> {});
-    }
+		channel.basicConsume(DOCSCI_QUEUE, true, deliverCallback, consumerTag -> {
+		});
+	}
 
 }
