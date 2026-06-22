@@ -24,8 +24,10 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -1595,6 +1597,23 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 
 	}
+	
+	private boolean isUrlAccessible(String url) {
+	    try {
+	        HttpHead request = new HttpHead(url);
+	        request.setConfig(RequestConfig.custom()
+	            .setConnectTimeout(5000)
+	            .setSocketTimeout(5000)
+	            .build());
+	        try (CloseableHttpResponse response = httpClient.execute(request)) {
+	            int statusCode = response.getStatusLine().getStatusCode();
+	            return statusCode >= 200 && statusCode < 400;
+	        }
+	    } catch (Exception e) {
+	        logger.warn("URL not accessible, skipping GNFinder: {}", url);
+	        return false;
+	    }
+	}
 
 	@Override
 	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
@@ -1607,6 +1626,11 @@ public class DocumentServiceImpl implements DocumentService {
 		String basePath = properties.getProperty("baseDocPath");
 		// external URL scientific name parsing
 		String completeFileUrl = filePath.startsWith("http") ? filePath : serverUrl + "/" + basePath + filePath;
+		
+		if (!isUrlAccessible(completeFileUrl)) {
+	        logger.warn("Skipping GNFinder — file not accessible: {}", completeFileUrl);
+	        return null;
+	    }
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("127.0.0.1:3006").setPath("/parse")
