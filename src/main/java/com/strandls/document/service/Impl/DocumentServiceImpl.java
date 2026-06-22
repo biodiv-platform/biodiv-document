@@ -1735,22 +1735,73 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 
 	}
-	
+
+	public void updateScienticNames(Long documentId, UFile ufile, String externalUrl) {
+
+		logger.info("Recalculationg for documentId {}", documentId);
+
+		docSciNameDao.deleteByDocumentId(documentId);
+
+		if (ufile != null) {
+			System.out.println("------------name finder process started-----------");
+			parsePdfWithGNFinder(ufile.getPath(), documentId);
+		}
+		if (externalUrl != null && externalUrl.startsWith("http")) {
+			System.out.println("------------name finder process started-----------");
+			parsePdfWithGNFinder(externalUrl, documentId);
+		}
+
+	}
+
 	public void handleTaxonByName(TaxonomyUpdateData message) {
 
-
 		if (message.getBulkIds() != null) {
-			docSciNameDao.deleteByTaxonConceptIds(message.getBulkIds());
+			try {
+				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(message.getBulkIds());
+				List<Document> documents = documentDao.findByBulkIds(documentIds);
+				for (Document doc : documents) {
+					UFile ufile = null;
+					if (doc.getuFileId() != null)
+						ufile = resourceService.getUFilePath(doc.getuFileId().toString());
+					updateScienticNames(doc.getId(), ufile, doc.getExternalUrl());
+					
+				}
+			} catch (com.strandls.resource.ApiException e) {
+				e.printStackTrace();
+			}
 		}
 
 		if (message.getDeleteRecoIds() != null) {
-			docSciNameDao.deleteByTaxonConceptIds(message.getBulkIds());
+			try {
+				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(message.getDeleteRecoIds());
+				List<Document> documents = documentDao.findByBulkIds(documentIds);
+				for (Document doc : documents) {
+					UFile ufile = null;
+					if (doc.getuFileId() != null)
+						ufile = resourceService.getUFilePath(doc.getuFileId().toString());
+					updateScienticNames(doc.getId(), ufile, doc.getExternalUrl());
+					
+				}
+			} catch (com.strandls.resource.ApiException e) {
+				e.printStackTrace();
+			}
 		}
 
-		//if (!Objects.equals(message.getOldName(), message.getName())) {
-		
-		//}
+		if (!Objects.equals(message.getOldName(), message.getName())) {
+			try {
+				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(List.of(message.getTargetId()));
+				List<Document> documents = documentDao.findByBulkIds(documentIds);
+				for (Document doc : documents) {
+					UFile ufile = null;
+					if (doc.getuFileId() != null)
+						ufile = resourceService.getUFilePath(doc.getuFileId().toString());
+					updateScienticNames(doc.getId(), ufile, doc.getExternalUrl());
+					
+				}
+			} catch (com.strandls.resource.ApiException e) {
+				e.printStackTrace();
+			}
+		}
 	}
-
 
 }
