@@ -1754,8 +1754,9 @@ public class DocumentServiceImpl implements DocumentService {
 	}
 
 	public void handleTaxonByName(TaxonomyUpdateData message) {
-
+		System.out.println("Inside recalculation");
 		if (message.getBulkIds() != null) {
+			System.out.println("Inside bulk");
 			try {
 				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(message.getBulkIds());
 				List<Document> documents = documentDao.findByBulkIds(documentIds);
@@ -1772,6 +1773,7 @@ public class DocumentServiceImpl implements DocumentService {
 		}
 
 		if (message.getDeleteRecoIds() != null) {
+			System.out.println("Inside deleteNameDao");
 			try {
 				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(message.getDeleteRecoIds());
 				List<Document> documents = documentDao.findByBulkIds(documentIds);
@@ -1788,6 +1790,7 @@ public class DocumentServiceImpl implements DocumentService {
 		}
 
 		if (!Objects.equals(message.getOldName(), message.getName())) {
+			System.out.println("Inside namechange");
 			try {
 				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(List.of(message.getTargetId()));
 				List<Document> documents = documentDao.findByBulkIds(documentIds);
