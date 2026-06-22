@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -94,6 +95,7 @@ import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.esmodule.pojo.MapQueryResponse.ResultEnum;
 import com.strandls.esmodule.pojo.SpeciesGroup;
+import com.strandls.esmodule.pojo.TaxonomyUpdateData;
 import com.strandls.file.api.UploadApi;
 import com.strandls.file.model.FilesDTO;
 import com.strandls.geoentities.controllers.GeoentitiesServicesApi;
@@ -1733,5 +1735,22 @@ public class DocumentServiceImpl implements DocumentService {
 		return null;
 
 	}
+	
+	public void handleTaxonByName(TaxonomyUpdateData message) {
+
+
+		if (message.getBulkIds() != null) {
+			docSciNameDao.deleteByTaxonConceptIds(message.getBulkIds());
+		}
+
+		if (message.getDeleteRecoIds() != null) {
+			docSciNameDao.deleteByTaxonConceptIds(message.getBulkIds());
+		}
+
+		//if (!Objects.equals(message.getOldName(), message.getName())) {
+		
+		//}
+	}
+
 
 }
