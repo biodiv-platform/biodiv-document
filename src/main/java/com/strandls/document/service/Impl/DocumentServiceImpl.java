@@ -1608,11 +1608,12 @@ public class DocumentServiceImpl implements DocumentService {
 		String completeFileUrl = filePath.startsWith("http") ? filePath : serverUrl + "/" + basePath + filePath;
 
 		URIBuilder builder = new URIBuilder();
-		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
+		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl); 
 
 		URI uri = null;
 		try {
 			uri = builder.build();
+			logger.info("GNFinder URL: {}", uri.toString()); 
 			HttpGet request = new HttpGet(uri);
 
 			try (CloseableHttpResponse response = httpClient.execute(request)) {
