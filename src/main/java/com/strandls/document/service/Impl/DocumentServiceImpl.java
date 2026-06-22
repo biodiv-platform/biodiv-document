@@ -1798,10 +1798,16 @@ public class DocumentServiceImpl implements DocumentService {
 				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(List.of(message.getTargetId()));
 				List<Document> documents = documentDao.findByBulkIds(documentIds);
 				for (Document doc : documents) {
-					UFile ufile = null;
-					if (doc.getuFileId() != null)
-						ufile = resourceService.getUFilePath(doc.getuFileId().toString());
-					updateScienticNames(doc.getId(), ufile, doc.getExternalUrl());
+					UFile resource = null;
+					if (doc.getuFileId() != null) {
+						logger.info("Fetching resource for uFileId: {}", doc.getuFileId());
+						resource = resourceService.getUFilePath(doc.getuFileId().toString());
+						resource.setPath(resource.getPath().replace("/documents", ""));
+						logger.info("Retrieved and updated resource path");
+					} else {
+						logger.info("No uFileId found for document");
+					}
+					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
 					
 				}
 			} catch (com.strandls.resource.ApiException e) {
