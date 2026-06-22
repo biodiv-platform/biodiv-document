@@ -1598,6 +1598,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 	@Override
 	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
+		System.setProperty("java.net.preferIPv4Stack", "true");
 
 		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
 		String serverUrl = properties.getProperty("serverUrl");
@@ -1608,7 +1609,8 @@ public class DocumentServiceImpl implements DocumentService {
 		String completeFileUrl = filePath.startsWith("http") ? filePath : serverUrl + "/" + basePath + filePath;
 
 		URIBuilder builder = new URIBuilder();
-		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl); 
+		builder.setScheme("http").setHost("127.0.0.1:3006").setPath("/parse")
+		       .setParameter("file", completeFileUrl);
 
 		URI uri = null;
 		try {
