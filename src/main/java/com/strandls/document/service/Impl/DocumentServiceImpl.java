@@ -15,12 +15,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
@@ -1775,73 +1777,84 @@ public class DocumentServiceImpl implements DocumentService {
 	}
 
 	public void handleTaxonByName(TaxonomyUpdateData updateData) {
-		// Rerun for document with ids to merge
+		if (updateData == null)
+			return;
+
+		// 1. Accumulate all unique Taxon IDs that need processing across all scenarios
+		Set<Long> taxonIdsToProcess = new HashSet<>();
+
 		if (updateData.getBulkIds() != null) {
-			try {
-				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(updateData.getBulkIds());
-				List<Document> documents = documentDao.findByBulkIds(documentIds);
-				for (Document doc : documents) {
-					UFile resource = null;
-					if (doc.getuFileId() != null) {
-						logger.info("Fetching resource for uFileId: {}", doc.getuFileId());
-						resource = resourceService.getUFilePath(doc.getuFileId().toString());
-						resource.setPath(resource.getPath().replace("/documents", ""));
-						logger.info("Retrieved and updated resource path");
-					} else {
-						logger.info("No uFileId found for document");
-					}
-					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
-				}
-			} catch (com.strandls.resource.ApiException e) {
-				e.printStackTrace();
-			}
+			taxonIdsToProcess.addAll(updateData.getBulkIds());
 		}
 
-		// Rerun for deleted
 		if (updateData.getDeleteRecoIds() != null) {
-			try {
-				List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(updateData.getDeleteRecoIds());
-				List<Document> documents = documentDao.findByBulkIds(documentIds);
-				for (Document doc : documents) {
-					UFile resource = null;
-					if (doc.getuFileId() != null) {
-						logger.info("Fetching resource for uFileId: {}", doc.getuFileId());
-						resource = resourceService.getUFilePath(doc.getuFileId().toString());
-						resource.setPath(resource.getPath().replace("/documents", ""));
-						logger.info("Retrieved and updated resource path");
-					} else {
-						logger.info("No uFileId found for document");
-					}
-					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
-
-				}
-			} catch (com.strandls.resource.ApiException e) {
-				e.printStackTrace();
-			}
+			taxonIdsToProcess.addAll(updateData.getDeleteRecoIds());
 		}
 
-		// Rerun on nameChange
-		if (!Objects.equals(updateData.getOldName(), updateData.getName())) {
-			try {
-				List<Long> documentIds = docSciNameDao
-						.getDocumentIdsByTaxonConceptIds(List.of(updateData.getTargetId()));
-				List<Document> documents = documentDao.findByBulkIds(documentIds);
-				for (Document doc : documents) {
+		if (!Objects.equals(updateData.getOldName(), updateData.getName()) && updateData.getTargetId() != null) {
+			taxonIdsToProcess.add(updateData.getTargetId());
+		}
+
+		// 2. Early exit if there is absolutely nothing to process
+		if (taxonIdsToProcess.isEmpty()) {
+			return;
+		}
+
+		// 3. Delegate to a single, optimized processing pipeline
+		processDocumentsForTaxonIds(taxonIdsToProcess);
+	}
+
+	private void processDocumentsForTaxonIds(Set<Long> taxonIds) {
+		try {
+			// Fetch all associated document IDs in one single database call
+			List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(new ArrayList<>(taxonIds));
+			if (documentIds == null || documentIds.isEmpty()) {
+				logger.info("No documents found for the requested taxon updates.");
+				return;
+			}
+
+			// Fetch all Document objects in bulk
+			List<Document> documents = documentDao.findByBulkIds(documentIds);
+
+			// Local Cache Map to avoid hitting the resource API repeatedly for duplicate
+			// uFileIds
+			Map<String, UFile> uFileCache = new HashMap<>();
+
+			for (Document doc : documents) {
+				try {
 					UFile resource = null;
+
 					if (doc.getuFileId() != null) {
-						logger.info("Fetching resource for uFileId: {}", doc.getuFileId());
-						resource = resourceService.getUFilePath(doc.getuFileId().toString());
-						resource.setPath(resource.getPath().replace("/documents", ""));
-						logger.info("Retrieved and updated resource path");
-					} else {
-						logger.info("No uFileId found for document");
+						String uFileIdStr = doc.getuFileId().toString();
+
+						// Look up in the local cache first before making an API call
+						if (uFileCache.containsKey(uFileIdStr)) {
+							resource = uFileCache.get(uFileIdStr);
+						} else {
+							logger.debug("Fetching resource from service for uFileId: {}", uFileIdStr);
+							resource = resourceService.getUFilePath(uFileIdStr);
+
+							if (resource != null && resource.getPath() != null) {
+								resource.setPath(resource.getPath().replace("/documents", ""));
+							}
+							// Save to local cache (even if null, to avoid repeating a failing/empty
+							// request)
+							uFileCache.put(uFileIdStr, resource);
+						}
 					}
+
+					// Process the scientific names extraction safely
 					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
 
+				} catch (com.strandls.resource.ApiException e) {
+					logger.error("API error fetching resource for documentId: {} (uFileId: {}). Skipping.", doc.getId(),
+							doc.getuFileId(), e);
+				} catch (Exception e) {
+					logger.error("Unexpected error processing documentId: {}. Skipping.", doc.getId(), e);
 				}
-			} catch (com.strandls.resource.ApiException e) {
-				e.printStackTrace();
 			}
+		} catch (Exception e) {
+			logger.error("Critical error while batch processing taxonomy documents", e);
 		}
 	}
 

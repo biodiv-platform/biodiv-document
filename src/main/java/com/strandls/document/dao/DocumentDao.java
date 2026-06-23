@@ -47,7 +47,6 @@ public class DocumentDao extends AbstractDAO<Document, Long> {
 	}
 
 	public List<Document> findByBulkIds(List<Long> bulkIds) {
-		logger.info("Fetching documents by bulkIds: {}", bulkIds);
 
 		Session session = sessionFactory.openSession();
 		List<Document> results = null;
@@ -56,8 +55,6 @@ public class DocumentDao extends AbstractDAO<Document, Long> {
 			Query<Document> query = session.createQuery(hql, Document.class);
 			query.setParameter("bulkIds", bulkIds);
 			results = query.list();
-
-			logger.info("Found {} documents for bulkIds: {}", results != null ? results.size() : 0, bulkIds);
 		} catch (Exception e) {
 			logger.error("Error fetching documents by bulkIds: {} - {}", bulkIds, e.getMessage(), e);
 		} finally {
