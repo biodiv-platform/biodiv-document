@@ -116,9 +116,12 @@ public class DocSciNameDao extends AbstractDAO<DocSciName, Long> {
 		Transaction tx = null;
 		try {
 			tx = session.beginTransaction();
-			String sql = "UPDATE DocSciName SET isDeleted = true WHERE documentId = :documentId";
-			Query query = session.createQuery(sql);
+			String hql = "UPDATE DocSciName SET isDeleted = true WHERE documentId = :documentId";
+			Query query = session.createQuery(hql);
 			query.setParameter("documentId", documentId);
+
+			int rowsUpdated = query.executeUpdate();
+			logger.info("Soft-deleted {} DocSciName rows for documentId {}", rowsUpdated, documentId);
 
 			tx.commit();
 		} catch (Exception e) {
