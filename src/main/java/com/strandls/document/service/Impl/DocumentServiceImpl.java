@@ -327,8 +327,12 @@ public class DocumentServiceImpl implements DocumentService {
 				}
 				logger.info("Retrieved {} document species groups", docSGroups.size());
 
+				List<DocSciName> docSciNames = docSciNameDao.findByDocId(documentId, null);
+				logger.info("Retrieved {} document scientific names", docSciNames.size());
+
 				List<Long> docHabitatIds = new ArrayList<Long>();
 				List<Long> docSGroupIds = new ArrayList<Long>();
+				List<Long> docTaxonIds = new ArrayList<Long>();
 
 				for (DocumentHabitat docHabitat : docHabitats) {
 					docHabitatIds.add(docHabitat.getHabitatId());
@@ -340,9 +344,15 @@ public class DocumentServiceImpl implements DocumentService {
 				}
 				logger.info("Extracted {} species group IDs", docSGroupIds.size());
 
+				for (DocSciName docSciName : docSciNames) {
+					if (docSciName.getTaxonConceptId() != null) {
+						docTaxonIds.add(docSciName.getTaxonConceptId());
+					}
+				}
+
 				logger.info("Creating ShowDocument object");
 				ShowDocument showDoc = new ShowDocument(document, userIbp, documentCoverages, userGroup, featured,
-						resource, docHabitatIds, docSGroupIds, flag, tags, documentLicense);
+						resource, docHabitatIds, docSGroupIds, docTaxonIds, flag, tags, documentLicense);
 				logger.info("Successfully created ShowDocument, returning response");
 				return showDoc;
 			} else {
@@ -468,10 +478,6 @@ public class DocumentServiceImpl implements DocumentService {
 					docCoverageDao.save(docCoverage);
 				}
 			}
-			ShowDocument res = show(document.getId());
-			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-			objectMapper.setDateFormat(df);
-			String docString = objectMapper.writeValueAsString(res);
 			System.out.println("------------name finder process started-----------");
 			if (ufile != null) {
 				parsePdfWithGNFinder(ufile.getPath(), document.getId());
@@ -479,6 +485,10 @@ public class DocumentServiceImpl implements DocumentService {
 			if (documentCreateData.getExternalUrl() != null && documentCreateData.getExternalUrl().startsWith("http")) {
 				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
 			}
+			ShowDocument res = show(document.getId());
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+			objectMapper.setDateFormat(df);
+			String docString = objectMapper.writeValueAsString(res);
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -1750,6 +1760,7 @@ public class DocumentServiceImpl implements DocumentService {
 			existingName.setIsDeleted(true);
 			updatedName = docSciNameDao.update(existingName);
 			if (updatedName != null) {
+				updateDocumentLastRevised(scientifNameDetails.getDocumentId());
 				return updatedName;
 			}
 
@@ -1757,6 +1768,38 @@ public class DocumentServiceImpl implements DocumentService {
 
 		return null;
 
+	}
+
+	public void repopulateScientificNames(HttpServletRequest request, Long docId) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+		JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
+
+		Document documentDetails = documentDao.findById(docId);
+
+		Long authorId = documentDetails.getAuthorId();
+
+		if (roles.contains(ROLE_ADMIN) || userId.equals(authorId)) {
+			UFile resource = null;
+
+			if (documentDetails.getuFileId() != null) {
+				String uFileIdStr = documentDetails.getuFileId().toString();
+
+				try {
+					resource = resourceService.getUFilePath(uFileIdStr);
+				} catch (com.strandls.resource.ApiException e) {
+					logger.error("Error while fetching resource uFilePath");
+				}
+
+				if (resource != null && resource.getPath() != null) {
+					resource.setPath(resource.getPath().replace("/documents", ""));
+				}
+			}
+
+			// Process the scientific names extraction safely
+			updateScienticNames(documentDetails.getId(), resource, documentDetails.getExternalUrl());
+			updateDocumentLastRevised(documentDetails.getId());
+		}
 	}
 
 	public void updateScienticNames(Long documentId, UFile ufile, String externalUrl) {
@@ -1768,8 +1811,7 @@ public class DocumentServiceImpl implements DocumentService {
 		if (ufile != null) {
 			System.out.println("------------name finder process started-----------");
 			parsePdfWithGNFinder(ufile.getPath(), documentId);
-		}
-		if (externalUrl != null && externalUrl.startsWith("http")) {
+		} else if (externalUrl != null && externalUrl.startsWith("http")) {
 			System.out.println("------------name finder process started-----------");
 			parsePdfWithGNFinder(externalUrl, documentId);
 		}
