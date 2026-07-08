@@ -111,4 +111,6 @@ public interface DocumentService {
 
 	public void repopulateScientificNames(HttpServletRequest request, Long docId);
 
+	public void updateAllScientificNames(HttpServletRequest request);
+
 }

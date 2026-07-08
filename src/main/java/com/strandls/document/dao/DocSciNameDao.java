@@ -133,4 +133,107 @@ public class DocSciNameDao extends AbstractDAO<DocSciName, Long> {
 		}
 	}
 
+	public void unlinkTaxonIds(List<Long> taxonConceptIds) {
+
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			String hql = "UPDATE DocSciName SET taxonConceptId = null WHERE taxonConceptId IN :taxonConceptIds";
+			Query query = session.createQuery(hql);
+			query.setParameter("taxonConceptIds", taxonConceptIds);
+
+			int rowsUpdated = query.executeUpdate();
+			logger.info("Unlinked {} DocSciName rows for taxonConceptIds {}", rowsUpdated, taxonConceptIds);
+
+			tx.commit();
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error("Error unlinking entries by taxonConceptIds: {} - {}", taxonConceptIds, e.getMessage(), e);
+		} finally {
+			session.close();
+		}
+	}
+
+	public void linkTaxonIds(Long taxonConceptId, String name) {
+
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			String hql = "UPDATE DocSciName SET taxonConceptId = :taxonConceptId WHERE taxonConceptId IS NULL AND scientificName = :name";
+			Query query = session.createQuery(hql);
+			query.setParameter("taxonConceptId", taxonConceptId);
+			query.setParameter("name", name);
+
+			int rowsUpdated = query.executeUpdate();
+			logger.info("Linked {} DocSciName rows for taxonConceptIds {}", rowsUpdated, taxonConceptId);
+
+			tx.commit();
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error("Error Linking entries by taxonConceptIds: {} - {}", taxonConceptId, e.getMessage(), e);
+		} finally {
+			session.close();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<DocSciName> findAllScientificNames() {
+		String qry = "from DocSciName where isDeleted = false";
+		Session session = sessionFactory.openSession();
+		List<DocSciName> result = null;
+		try {
+			Query<DocSciName> query = session.createQuery(qry);
+
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
+	public void updateAll(List<DocSciName> docSciNames) {
+
+		if (docSciNames == null || docSciNames.isEmpty()) {
+			return;
+		}
+
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		final int batchSize = 50; // tune based on hibernate.jdbc.batch_size in config
+
+		try {
+			tx = session.beginTransaction();
+
+			for (int i = 0; i < docSciNames.size(); i++) {
+				DocSciName docSciName = docSciNames.get(i);
+				session.merge(docSciName); // use merge() if entities are detached; update() if they're guaranteed
+											// transient/new to this session
+
+				if (i > 0 && i % batchSize == 0) {
+					session.flush();
+					session.clear();
+				}
+			}
+
+			tx.commit();
+			logger.info("Bulk updated {} DocSciName rows", docSciNames.size());
+
+		} catch (Exception e) {
+			if (tx != null) {
+				tx.rollback();
+			}
+			logger.error("Error bulk updating DocSciName rows: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to bulk update DocSciName rows", e);
+		} finally {
+			session.close();
+		}
+	}
+
 }

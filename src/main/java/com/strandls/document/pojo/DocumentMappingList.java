@@ -2,6 +2,7 @@ package com.strandls.document.pojo;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.strandls.resource.pojo.UFile;
 import com.strandls.userGroup.pojo.Featured;
@@ -24,6 +25,9 @@ public class DocumentMappingList {
 	private UserIbp userIbp;
 	private List<Tags> tags;
 
+	@JsonAlias("scientificNames")
+	private List<DocumentScientificName> scientificNames;
+
 	/**
 	 * 
 	 */
@@ -45,7 +49,8 @@ public class DocumentMappingList {
 	 */
 	public DocumentMappingList(Document document, List<DocumentCoverage> documentCoverages,
 			List<UserGroupIbp> userGroupIbp, List<Featured> featured, UserIbp userIbp, UFile uFile,
-			List<Long> habitatIds, List<Long> speciesGroupIds, List<Flag> flag, List<Tags> tags) {
+			List<Long> habitatIds, List<Long> speciesGroupIds, List<Flag> flag, List<Tags> tags,
+			List<DocumentScientificName> scientificNames) {
 		super();
 		this.document = document;
 
@@ -58,6 +63,7 @@ public class DocumentMappingList {
 		this.userIbp = userIbp;
 		this.flag = flag;
 		this.tags = tags;
+		this.scientificNames = scientificNames;
 	}
 
 	public Document getDocument() {
@@ -138,6 +144,14 @@ public class DocumentMappingList {
 
 	public void setUserIbp(UserIbp userIbp) {
 		this.userIbp = userIbp;
+	}
+
+	public List<DocumentScientificName> getScientificNames() {
+		return scientificNames;
+	}
+
+	public void setScientificNames(List<DocumentScientificName> scientificNames) {
+		this.scientificNames = scientificNames;
 	}
 
 }

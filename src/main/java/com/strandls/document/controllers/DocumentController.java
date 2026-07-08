@@ -660,6 +660,24 @@ public class DocumentController {
 	}
 
 	@POST
+	@Path(ApiConstants.UPDATE + ApiConstants.NAMES)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ValidateUser
+	@Operation(summary = "Updates scientific names for all documents", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated scientific names successfully"),
+			@ApiResponse(responseCode = "400", description = "Unable to update") })
+	public Response updateBulkScientificNames(@Context HttpServletRequest request) {
+		try {
+			docService.updateAllScientificNames(request);
+			return Response.status(Status.OK).entity("Repopulated Successfully").build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
 	@Path(ApiConstants.UNFOLLOW + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -754,6 +772,7 @@ public class DocumentController {
 			@Parameter(name = "author", description = "Author filter"),
 			@Parameter(name = "publisher", description = "Publisher filter"),
 			@Parameter(name = "title", description = "Title filter"),
+			@Parameter(name = "scientificName", description = "Scientific Name filter"),
 			@Parameter(name = "geoAggegationPrecision", description = "Precision for geo aggregation", example = "1"),
 			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false") }, requestBody = @RequestBody(required = false, content = @Content(schema = @Schema(implementation = DocumentListParams.class))), responses = {
 					@ApiResponse(responseCode = "200", description = "List of documents returned", content = @Content(schema = @Schema(implementation = DocumentListData.class))),
@@ -768,7 +787,8 @@ public class DocumentController {
 			@QueryParam("revisedOnMinDate") String revisedOnMinDate,
 			@DefaultValue("") @QueryParam("isFlagged") String isFlagged,
 			@DefaultValue("") @QueryParam("user") String user, @DefaultValue("") @QueryParam("sGroup") String sGroup,
-			@QueryParam("taxon") String taxon, @DefaultValue("") @QueryParam("habitatIds") String habitatIds,
+			@QueryParam("taxon") String taxon, @QueryParam("scientificNames") String scientificName,
+			@DefaultValue("") @QueryParam("habitatIds") String habitatIds,
 			@DefaultValue("") @QueryParam("flags") String flags,
 			@DefaultValue("") @QueryParam("featured") String featured, @QueryParam("left") Double left,
 			@QueryParam("right") Double right, @QueryParam("top") Double top, @QueryParam("bottom") Double bottom,
@@ -825,15 +845,16 @@ public class DocumentController {
 			MapAggregationResponse aggregationResult = null;
 
 			if (offset == 0) {
-				aggregationResult = docListService.mapAggregate(index, type, sGroup, taxon, habitatIds, tags, user,
-						flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-						revisedOnMinDate, state, itemType, year, author, publisher, title, geoShapeFilterField,
-						mapSearchParams);
+				aggregationResult = docListService.mapAggregate(index, type, sGroup, taxon, scientificName, habitatIds,
+						tags, user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged,
+						revisedOnMaxDate, revisedOnMinDate, state, itemType, year, author, publisher, title,
+						geoShapeFilterField, mapSearchParams);
 			}
 
-			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, taxon, habitatIds, tags, user, flags,
-					createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-					revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
+			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags,
+					user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged,
+					revisedOnMaxDate, revisedOnMinDate, state, itemType, year, author, publisher, title,
+					mapSearchParams);
 
 			if (view.equalsIgnoreCase("list")) {
 				DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,

@@ -14,10 +14,10 @@ public interface DocumentListService {
 			MapSearchQuery querys);
 
 	public MapAggregationResponse mapAggregate(String index, String type, String sGroup, String taxon,
-			String habitatIds, String tags, String user, String flags, String createdOnMaxDate, String createdOnMinDate,
-			String featured, String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate,
-			String state, String itemType, String year, String author, String publisher, String title,
-			String geoShapeFilterField, MapSearchParams mapSearchParams);
+			String scientificName, String habitatIds, String tags, String user, String flags, String createdOnMaxDate,
+			String createdOnMinDate, String featured, String userGroupList, String isFlagged, String revisedOnMaxDate,
+			String revisedOnMinDate, String state, String itemType, String year, String author, String publisher,
+			String title, String geoShapeFilterField, MapSearchParams mapSearchParams);
 
 	public void bulkAction(Boolean selectAll, String bulkAction, String bulkDocumentsIds, String bulkUsergroupIds,
 			MapSearchQuery mapSearchQuery, String index, String type, HttpServletRequest request);

@@ -8,6 +8,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.document.dao.DocSciNameDao;
+import com.strandls.document.pojo.DocSciName;
+import com.strandls.document.pojo.DocumentScientificName;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapDocument;
@@ -26,6 +29,9 @@ public class ESUpdate {
 
 	@Inject
 	private UserGroupServiceApi ugService;
+
+	@Inject
+	private DocSciNameDao docSciNameDao;
 
 	public void updateESInstance(String documentId, String documentData) {
 		try {
@@ -70,6 +76,47 @@ public class ESUpdate {
 				Map<String, Object> payload = new HashMap<>();
 				payload.put("id", id);
 				payload.put("userGroupIbp", userGroupList);
+				ESDocumentShowList.add(payload);
+
+			}
+
+			if (!ESDocumentShowList.isEmpty()) {
+
+				esService.bulkUpdate(DocumentIndex.INDEX.getValue(), DocumentIndex.TYPE.getValue(), ESDocumentShowList);
+
+			}
+
+		} catch (ApiException e) {
+			logger.error(e.getMessage());
+		}
+	}
+
+	public void esBulkScientificNamesUpdate(String documentIds) {
+
+		if (documentIds == null || documentIds.isEmpty()) {
+			return;
+		}
+
+		List<Map<String, Object>> ESDocumentShowList = new ArrayList<>();
+
+		try {
+
+			for (String id : documentIds.split(",")) {
+				List<DocumentScientificName> scientificNamesList = new ArrayList<>();
+
+				try {
+					List<DocSciName> docSciNames = docSciNameDao.findByDocId(Long.parseLong(id), null);
+					for (DocSciName docSciName : docSciNames) {
+						scientificNamesList.add(new DocumentScientificName(docSciName.getTaxonConceptId(),
+								docSciName.getScientificName()));
+					}
+				} catch (Exception e) {
+					logger.error(e.getMessage());
+				}
+
+				Map<String, Object> payload = new HashMap<>();
+				payload.put("id", id);
+				payload.put("scientificNames", scientificNamesList);
 				ESDocumentShowList.add(payload);
 
 			}

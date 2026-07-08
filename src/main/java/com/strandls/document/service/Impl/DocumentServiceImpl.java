@@ -84,6 +84,7 @@ import com.strandls.document.pojo.DocumentCreateData;
 import com.strandls.document.pojo.DocumentEditData;
 import com.strandls.document.pojo.DocumentHabitat;
 import com.strandls.document.pojo.DocumentMeta;
+import com.strandls.document.pojo.DocumentScientificName;
 import com.strandls.document.pojo.DocumentSpeciesGroup;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLog;
@@ -94,6 +95,7 @@ import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentService;
 import com.strandls.document.util.MicroServicesUtils;
 import com.strandls.document.util.PropertyFileUtil;
+import com.strandls.document.util.ScientificNameMappingThread;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
@@ -332,7 +334,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 				List<Long> docHabitatIds = new ArrayList<Long>();
 				List<Long> docSGroupIds = new ArrayList<Long>();
-				List<Long> docTaxonIds = new ArrayList<Long>();
+				List<DocumentScientificName> docScientificNames = new ArrayList<>();
 
 				for (DocumentHabitat docHabitat : docHabitats) {
 					docHabitatIds.add(docHabitat.getHabitatId());
@@ -345,14 +347,13 @@ public class DocumentServiceImpl implements DocumentService {
 				logger.info("Extracted {} species group IDs", docSGroupIds.size());
 
 				for (DocSciName docSciName : docSciNames) {
-					if (docSciName.getTaxonConceptId() != null) {
-						docTaxonIds.add(docSciName.getTaxonConceptId());
-					}
+					docScientificNames.add(
+							new DocumentScientificName(docSciName.getTaxonConceptId(), docSciName.getScientificName()));
 				}
 
 				logger.info("Creating ShowDocument object");
 				ShowDocument showDoc = new ShowDocument(document, userIbp, documentCoverages, userGroup, featured,
-						resource, docHabitatIds, docSGroupIds, docTaxonIds, flag, tags, documentLicense);
+						resource, docHabitatIds, docSGroupIds, docScientificNames, flag, tags, documentLicense);
 				logger.info("Successfully created ShowDocument, returning response");
 				return showDoc;
 			} else {
@@ -1802,6 +1803,18 @@ public class DocumentServiceImpl implements DocumentService {
 		}
 	}
 
+	public void updateAllScientificNames(HttpServletRequest request) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
+
+		if (roles.contains(ROLE_ADMIN)) {
+			ScientificNameMappingThread mappingThread = new ScientificNameMappingThread(esUpdate, docSciNameDao,
+					esService);
+			Thread thread = new Thread(mappingThread);
+			thread.start();
+		}
+	}
+
 	public void updateScienticNames(Long documentId, UFile ufile, String externalUrl) {
 
 		logger.info("Recalculationg for documentId {}", documentId);
@@ -1824,6 +1837,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 		// 1. Accumulate all unique Taxon IDs that need processing across all scenarios
 		Set<Long> taxonIdsToProcess = new HashSet<>();
+		String canonicalName = null;
 
 		if (updateData.getBulkIds() != null) {
 			taxonIdsToProcess.addAll(updateData.getBulkIds());
@@ -1835,6 +1849,7 @@ public class DocumentServiceImpl implements DocumentService {
 
 		if (!Objects.equals(updateData.getOldName(), updateData.getName()) && updateData.getTargetId() != null) {
 			taxonIdsToProcess.add(updateData.getTargetId());
+			canonicalName = updateData.getCanonicalForm();
 		}
 
 		// 2. Early exit if there is absolutely nothing to process
@@ -1843,7 +1858,17 @@ public class DocumentServiceImpl implements DocumentService {
 		}
 
 		// 3. Delegate to a single, optimized processing pipeline
-		processDocumentsForTaxonIds(taxonIdsToProcess);
+		List<Long> documentIds = new ArrayList<>();
+		if (canonicalName == null) {
+			documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(new ArrayList<>(taxonIdsToProcess));
+		}
+		docSciNameDao.unlinkTaxonIds(new ArrayList<>(taxonIdsToProcess));
+		if (canonicalName != null) {
+			docSciNameDao.linkTaxonIds(updateData.getTargetId(), canonicalName);
+			documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(List.of(updateData.getTargetId()));
+		}
+		String csv = documentIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+		esUpdate.esBulkScientificNamesUpdate(csv);
 	}
 
 	private void processDocumentsForTaxonIds(Set<Long> taxonIds) {

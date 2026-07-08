@@ -27,7 +27,7 @@ public class ShowDocument {
 	private UFile uFile;
 	private List<Long> habitatIds;
 	private List<Long> speciesGroupIds;
-	private List<Long> taxonIds;
+	private List<DocumentScientificName> scientificNames;
 	private List<FlagShow> flag;
 	private List<Tags> tags;
 	private License documentLicense;
@@ -55,8 +55,8 @@ public class ShowDocument {
 	 */
 	public ShowDocument(Document document, UserIbp userIbp, List<DocumentCoverage> documentCoverages,
 			List<UserGroupIbp> userGroupIbp, List<Featured> featured, UFile uFile, List<Long> habitatIds,
-			List<Long> speciesGroupIds, List<Long> taxonIds, List<FlagShow> flag, List<Tags> tags,
-			License documentLicense) {
+			List<Long> speciesGroupIds, List<DocumentScientificName> scientificNames, List<FlagShow> flag,
+			List<Tags> tags, License documentLicense) {
 		super();
 		this.document = document;
 		this.userIbp = userIbp;
@@ -66,7 +66,7 @@ public class ShowDocument {
 		this.uFile = uFile;
 		this.habitatIds = habitatIds;
 		this.speciesGroupIds = speciesGroupIds;
-		this.taxonIds = taxonIds;
+		this.scientificNames = scientificNames;
 		this.flag = flag;
 		this.tags = tags;
 		this.documentLicense = documentLicense;
@@ -136,12 +136,12 @@ public class ShowDocument {
 		this.speciesGroupIds = speciesGroupIds;
 	}
 
-	public List<Long> getTaxonIds(List<Long> taxonIds) {
-		return taxonIds;
+	public List<DocumentScientificName> getScientificNames() {
+		return scientificNames;
 	}
 
-	public void setTaxonIds(List<Long> taxonIds) {
-		this.taxonIds = taxonIds;
+	public void setScientificNames(List<DocumentScientificName> scientificNames) {
+		this.scientificNames = scientificNames;
 	}
 
 	public List<FlagShow> getFlag() {
