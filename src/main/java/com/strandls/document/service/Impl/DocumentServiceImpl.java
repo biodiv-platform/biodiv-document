@@ -711,27 +711,40 @@ public class DocumentServiceImpl implements DocumentService {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			Long userId = Long.parseLong(profile.getId());
 			JSONArray userRoles = (JSONArray) profile.getAttribute(ROLES);
+
 			Document document = documentDao.findById(documentId);
-
-			MapQueryResponse esResponse;
-
-			esResponse = esService.delete(DocumentIndex.INDEX.getValue(), DocumentIndex.TYPE.getValue(),
-					documentId.toString());
-
-			ResultEnum result = esResponse.getResult();
-
-			if (result.getValue().equals("DELETED")
-					|| (document.getAuthorId().equals(userId) || userRoles.contains(ROLE_ADMIN))) {
-				document.setIsDeleted(true);
-				documentDao.update(document);
-				System.out.print("===deleted docuemnt===" + documentId + "returned" + result.getValue());
-				logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
-						document.getId(), "Document", null, "Document Deleted", generateMailData(document.getId()));
-				return true;
+			if (document == null) {
+				logger.warn("Document not found with ID: {}", documentId);
+				return false;
 			}
 
+			boolean isAuthor = document.getAuthorId().equals(userId);
+			boolean isAdmin = userRoles != null && userRoles.contains(ROLE_ADMIN);
+
+			if (!isAuthor && !isAdmin) {
+				logger.warn("User {} is not authorized to delete document {}", userId, documentId);
+				return false;
+			}
+
+			document.setIsDeleted(true);
+			documentDao.update(document);
+
+			MapQueryResponse esResponse = esService.delete(DocumentIndex.INDEX.getValue(),
+					DocumentIndex.TYPE.getValue(), documentId.toString());
+
+			ResultEnum result = esResponse != null ? esResponse.getResult() : null;
+			logger.info("=== Deleted document ID: {} | ES Result: {} ===", documentId,
+					result != null ? result.getValue() : "N/A");
+
+			logActivity.LogDocumentActivities(request.getHeader(HttpHeaders.AUTHORIZATION), null, document.getId(),
+					document.getId(), "Document", null, "Document Deleted", generateMailData(document.getId()));
+
+			return true;
+
 		} catch (ApiException e) {
-			logger.error(e.getMessage());
+			logger.error("API Error while deleting document ID {}: {}", documentId, e.getMessage(), e);
+		} catch (Exception e) {
+			logger.error("Unexpected error deleting document ID {}: {}", documentId, e.getMessage(), e);
 		}
 		return false;
 	}
