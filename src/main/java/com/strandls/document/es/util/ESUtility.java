@@ -119,7 +119,7 @@ public class ESUtility {
 		List<MapOrMatchPhraseQuery> orMatchPhraseQueriesnew = new ArrayList<>();
 
 		try {
-//			tags
+			// tags
 			List<Object> tagsList = cSTSOT(tags);
 			if (!tagsList.isEmpty()) {
 				List<Object> lowerCaseTags = tagsList.stream().map(o -> o.toString().toLowerCase())
@@ -127,13 +127,13 @@ public class ESUtility {
 				boolAndLists.add(assignBoolAndQuery(DocumentIndex.TAGS.getValue(), lowerCaseTags));
 			}
 
-//			userGroupList
+			// userGroupList
 			List<Object> ugList = cSTSOT(userGroupList);
 			if (!ugList.isEmpty()) {
 				boolAndLists.add(assignBoolAndQuery(DocumentIndex.USERGROUPID.getValue(), ugList));
 			}
 
-//			speciesGroupList
+			// speciesGroupList
 			if (sGroup != null && sGroup.length() >= 1) {
 				assignOrMatchPhraseArray(sGroup, DocumentIndex.SGROUP.getValue(), orMatchPhraseQueriesnew);
 			}
@@ -150,8 +150,8 @@ public class ESUtility {
 				boolAndLists.add(assignBoolAndQuery(DocumentIndex.SCIENTIFICNAME.getValue(), scientificNameList));
 			}
 
-//			habitatId List
-			if (habitatIds != null && habitatIds.length() >= 1) {
+			// habitatId List
+			if (habitatIds != null && habitatIds != null && habitatIds.length() >= 1) {
 				assignOrMatchPhraseArray(habitatIds, DocumentIndex.HABITATIDS.getValue(), orMatchPhraseQueriesnew);
 			}
 
@@ -159,13 +159,13 @@ public class ESUtility {
 			addSimpleBool(boolAndLists, DocumentIndex.FEATURED.getValue(), featured);
 			addSimpleBool(boolAndLists, DocumentIndex.FLAG.getValue(), flags);
 
-//			user
+			// user
 			List<Object> authorId = cSTSOT(user);
 			if (!authorId.isEmpty()) {
 				boolAndLists.add(assignBoolAndQuery(DocumentIndex.USER.getValue(), authorId));
 			}
 
-//			Data Quality:- Flagged
+			// Data Quality:- Flagged
 			List<Object> flaggedList = cSTSOT(isFlagged);
 			if (!flaggedList.isEmpty() && flaggedList.size() < 2) {
 				String first = (String) flaggedList.get(0);
