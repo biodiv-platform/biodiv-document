@@ -27,6 +27,9 @@ public class RabbitMqConnection {
 	private final static String DOCUMENT_QUEUE = "documentQueue";
 	private final static String ROUTING_DOCUMENT = "document";
 
+	public static final String DOCSCI_QUEUE = "docSciQueue";
+	public static final String DOCSCI_ROUTING_KEY = "docSci.updated";
+
 	public final static String EXCHANGE_BIODIV;
 
 	static {
@@ -61,6 +64,8 @@ public class RabbitMqConnection {
 		channel.exchangeDeclare(EXCHANGE_BIODIV, "direct");
 		channel.queueDeclare(DOCUMENT_QUEUE, false, false, false, null);
 		channel.queueBind(DOCUMENT_QUEUE, EXCHANGE_BIODIV, ROUTING_DOCUMENT);
+		channel.queueDeclare(DOCSCI_QUEUE, false, false, false, null);
+		channel.queueBind(DOCSCI_QUEUE, EXCHANGE_BIODIV, DOCSCI_ROUTING_KEY);
 
 		return channel;
 

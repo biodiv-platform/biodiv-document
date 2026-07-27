@@ -103,10 +103,11 @@ public class ESUtility {
 		return multipolygon;
 	}
 
-	public MapSearchQuery getMapSearchQuery(String sGroup, String habitatIds, String tags, String user, String flags,
-			String createdOnMaxDate, String createdOnMinDate, String featured, String userGroupList, String isFlagged,
-			String revisedOnMinDate, String revisedOnMaxDate, String state, String itemType, String year, String author,
-			String publisher, String title, MapSearchParams mapSearchParams) {
+	public MapSearchQuery getMapSearchQuery(String sGroup, String taxon, String scientificName, String habitatIds,
+			String tags, String user, String flags, String createdOnMaxDate, String createdOnMinDate, String featured,
+			String userGroupList, String isFlagged, String revisedOnMinDate, String revisedOnMaxDate, String state,
+			String itemType, String year, String author, String publisher, String title,
+			MapSearchParams mapSearchParams) {
 
 		MapSearchQuery mapSearchQuery = new MapSearchQuery();
 		List<MapAndBoolQuery> boolAndLists = new ArrayList<>();
@@ -136,8 +137,21 @@ public class ESUtility {
 			if (sGroup != null && sGroup.length() >= 1) {
 				assignOrMatchPhraseArray(sGroup, DocumentIndex.SGROUP.getValue(), orMatchPhraseQueriesnew);
 			}
+
+//          taxonIdList
+			List<Object> taxonList = cSTSOT(taxon);
+			if (taxon != null && taxon.length() >= 1) {
+				boolAndLists.add(assignBoolAndQuery(DocumentIndex.TAXON.getValue(), taxonList));
+			}
+
+//          scientificNameList
+			List<Object> scientificNameList = cSTSOT(scientificName);
+			if (scientificName != null && scientificName.length() >= 1) {
+				boolAndLists.add(assignBoolAndQuery(DocumentIndex.SCIENTIFICNAME.getValue(), scientificNameList));
+			}
+
 			// habitatId List
-			if (habitatIds != null && habitatIds.length() >= 1) {
+			if (habitatIds != null && habitatIds != null && habitatIds.length() >= 1) {
 				assignOrMatchPhraseArray(habitatIds, DocumentIndex.HABITATIDS.getValue(), orMatchPhraseQueriesnew);
 			}
 

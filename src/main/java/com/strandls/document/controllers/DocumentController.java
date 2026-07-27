@@ -638,6 +638,45 @@ public class DocumentController {
 	}
 
 	@POST
+	@Path(ApiConstants.UPDATE + ApiConstants.GNRD + "/{documentId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ValidateUser
+	@Operation(summary = "Repopulates scientific names for a document", description = "Returns the follow details", parameters = {
+			@Parameter(name = "documentId", description = "Document ID for repopulating", required = true) }, responses = {
+					@ApiResponse(responseCode = "200", description = "Repopulated scientific names successfully"),
+					@ApiResponse(responseCode = "400", description = "Unable to repopulate") })
+	public Response repopulateScientificNames(@Context HttpServletRequest request,
+			@PathParam("documentId") String documentId) {
+		try {
+			Long docId = Long.parseLong(documentId);
+			docService.repopulateScientificNames(request, docId);
+			return Response.status(Status.OK).entity("Repopulated Successfully").build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.UPDATE + ApiConstants.NAMES)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ValidateUser
+	@Operation(summary = "Updates scientific names for all documents", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated scientific names successfully"),
+			@ApiResponse(responseCode = "400", description = "Unable to update") })
+	public Response updateBulkScientificNames(@Context HttpServletRequest request) {
+		try {
+			docService.updateAllScientificNames(request);
+			return Response.status(Status.OK).entity("Repopulated Successfully").build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
 	@Path(ApiConstants.UNFOLLOW + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -713,6 +752,7 @@ public class DocumentController {
 			@Parameter(name = "isFlagged", description = "Flag filter"),
 			@Parameter(name = "user", description = "User ID filter"),
 			@Parameter(name = "sGroup", description = "Species group filter"),
+			@Parameter(name = "taxon", description = "Taxon filter"),
 			@Parameter(name = "habitatIds", description = "Habitat filter"),
 			@Parameter(name = "flags", description = "Flags filter"),
 			@Parameter(name = "featured", description = "Featured filter"),
@@ -730,6 +770,7 @@ public class DocumentController {
 			@Parameter(name = "author", description = "Author filter"),
 			@Parameter(name = "publisher", description = "Publisher filter"),
 			@Parameter(name = "title", description = "Title filter"),
+			@Parameter(name = "scientificName", description = "Scientific Name filter"),
 			@Parameter(name = "geoAggegationPrecision", description = "Precision for geo aggregation", example = "1"),
 			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false"),
 			@Parameter(name = "location", description = "Location filter") }, responses = {
@@ -745,6 +786,7 @@ public class DocumentController {
 			@QueryParam("revisedOnMinDate") String revisedOnMinDate,
 			@DefaultValue("") @QueryParam("isFlagged") String isFlagged,
 			@DefaultValue("") @QueryParam("user") String user, @DefaultValue("") @QueryParam("sGroup") String sGroup,
+			@QueryParam("taxon") String taxon, @QueryParam("scientificNames") String scientificName,
 			@DefaultValue("") @QueryParam("habitatIds") String habitatIds,
 			@DefaultValue("") @QueryParam("flags") String flags,
 			@DefaultValue("") @QueryParam("featured") String featured, @QueryParam("left") Double left,
@@ -802,15 +844,16 @@ public class DocumentController {
 			MapAggregationResponse aggregationResult = null;
 
 			if (offset == 0) {
-				aggregationResult = docListService.mapAggregate(index, type, sGroup, habitatIds, tags, user, flags,
-						createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-						revisedOnMinDate, state, itemType, year, author, publisher, title, geoShapeFilterField,
-						mapSearchParams);
+				aggregationResult = docListService.mapAggregate(index, type, sGroup, taxon, scientificName, habitatIds,
+						tags, user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged,
+						revisedOnMaxDate, revisedOnMinDate, state, itemType, year, author, publisher, title,
+						geoShapeFilterField, mapSearchParams);
 			}
 
-			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,
-					createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-					revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
+			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags,
+					user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged,
+					revisedOnMaxDate, revisedOnMinDate, state, itemType, year, author, publisher, title,
+					mapSearchParams);
 
 			if (view.equalsIgnoreCase("list")) {
 				DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,

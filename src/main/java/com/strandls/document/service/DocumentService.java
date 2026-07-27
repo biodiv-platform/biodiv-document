@@ -109,4 +109,8 @@ public interface DocumentService {
 
 	public Activity removeDocumentComment(HttpServletRequest request, CommentLoggingData comment, String commentId);
 
+	public void repopulateScientificNames(HttpServletRequest request, Long docId);
+
+	public void updateAllScientificNames(HttpServletRequest request);
+
 }

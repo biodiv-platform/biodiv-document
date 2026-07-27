@@ -108,14 +108,14 @@ public class DocumentListServiceImpl implements DocumentListService {
 	}
 
 	@Override
-	public MapAggregationResponse mapAggregate(String index, String type, String sGroup, String habitatIds, String tags,
-			String user, String flags, String createdOnMaxDate, String createdOnMinDate, String featured,
-			String userGroupList, String isFlagged, String revisedOnMaxDate, String revisedOnMinDate, String state,
-			String itemType, String year, String author, String publisher, String title, String geoShapeFilterField,
-			MapSearchParams mapSearchParams) {
+	public MapAggregationResponse mapAggregate(String index, String type, String sGroup, String taxon,
+			String scientificName, String habitatIds, String tags, String user, String flags, String createdOnMaxDate,
+			String createdOnMinDate, String featured, String userGroupList, String isFlagged, String revisedOnMaxDate,
+			String revisedOnMinDate, String state, String itemType, String year, String author, String publisher,
+			String title, String geoShapeFilterField, MapSearchParams mapSearchParams) {
 
-		MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,
-				createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
+		MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags,
+				user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
 				revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
 
 		MapSearchQuery mapSearchQueryFilter;
@@ -135,9 +135,9 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 		if (sGroup != null && !sGroup.isEmpty()) {
 
-			mapSearchQueryFilter = esUtility.getMapSearchQuery(omiter, habitatIds, tags, user, flags, createdOnMaxDate,
-					createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate, revisedOnMinDate, state,
-					itemType, year, author, publisher, title, mapSearchParams);
+			mapSearchQueryFilter = esUtility.getMapSearchQuery(omiter, taxon, scientificName, habitatIds, tags, user,
+					flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
+					revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, DocumentIndex.SGROUP.getValue(), null, mapSearchQueryFilter, mapAggResponse,
 					latch, geoShapeFilterField, null);
@@ -149,9 +149,9 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 		if (state != null && !state.isEmpty()) {
 
-			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags, createdOnMaxDate,
-					createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate, revisedOnMinDate, omiter,
-					itemType, year, author, publisher, title, mapSearchParams);
+			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags, user,
+					flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
+					revisedOnMinDate, omiter, itemType, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, DocumentIndex.STATE.getValue(), null, mapSearchQueryFilter, mapAggResponse,
 					latch, geoShapeFilterField, null);
@@ -163,9 +163,9 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 		if (itemType != null && !itemType.isEmpty()) {
 
-			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags, createdOnMaxDate,
-					createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate, revisedOnMinDate, state,
-					omiter, year, author, publisher, title, mapSearchParams);
+			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags, user,
+					flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
+					revisedOnMinDate, state, omiter, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, "document.itemtype.raw", null, mapSearchQueryFilter, mapAggResponse, latch,
 					geoShapeFilterField, null);
@@ -177,9 +177,9 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 		if (userGroupList != null && !userGroupList.isEmpty()) {
 
-			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags, createdOnMaxDate,
-					createdOnMinDate, featured, omiter, isFlagged, revisedOnMaxDate, revisedOnMinDate, state, omiter,
-					year, author, publisher, title, mapSearchParams);
+			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags, user,
+					flags, createdOnMaxDate, createdOnMinDate, featured, omiter, isFlagged, revisedOnMaxDate,
+					revisedOnMinDate, state, omiter, year, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, DocumentIndex.USERGROUPID.getValue(), null, mapSearchQueryFilter,
 					mapAggResponse, latch, geoShapeFilterField, null);
@@ -191,9 +191,9 @@ public class DocumentListServiceImpl implements DocumentListService {
 
 		if (year != null && !year.isEmpty()) {
 
-			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags, createdOnMaxDate,
-					createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate, revisedOnMinDate, state,
-					itemType, omiter, author, publisher, title, mapSearchParams);
+			mapSearchQueryFilter = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags, user,
+					flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
+					revisedOnMinDate, state, itemType, omiter, author, publisher, title, mapSearchParams);
 
 			getAggregateLatch(index, type, "document.year.keyword", null, mapSearchQueryFilter, mapAggResponse, latch,
 					geoShapeFilterField, null);

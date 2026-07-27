@@ -3,8 +3,11 @@
  */
 package com.strandls.document.dao;
 
+import java.util.List;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +44,23 @@ public class DocumentDao extends AbstractDAO<Document, Long> {
 			session.close();
 		}
 		return result;
+	}
+
+	public List<Document> findByBulkIds(List<Long> bulkIds) {
+
+		Session session = sessionFactory.openSession();
+		List<Document> results = null;
+		try {
+			String hql = "FROM Document WHERE id IN :bulkIds";
+			Query<Document> query = session.createQuery(hql, Document.class);
+			query.setParameter("bulkIds", bulkIds);
+			results = query.list();
+		} catch (Exception e) {
+			logger.error("Error fetching documents by bulkIds: {} - {}", bulkIds, e.getMessage(), e);
+		} finally {
+			session.close();
+		}
+		return results;
 	}
 
 }
