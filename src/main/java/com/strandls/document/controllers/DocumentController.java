@@ -22,7 +22,6 @@ import com.strandls.document.pojo.DocSciName;
 import com.strandls.document.pojo.DocumentCreateData;
 import com.strandls.document.pojo.DocumentEditData;
 import com.strandls.document.pojo.DocumentListData;
-import com.strandls.document.pojo.DocumentListParams;
 import com.strandls.document.pojo.DocumentMeta;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLogData;
@@ -70,6 +69,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -638,6 +638,45 @@ public class DocumentController {
 	}
 
 	@POST
+	@Path(ApiConstants.UPDATE + ApiConstants.GNRD + "/{documentId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ValidateUser
+	@Operation(summary = "Repopulates scientific names for a document", description = "Returns the follow details", parameters = {
+			@Parameter(name = "documentId", description = "Document ID for repopulating", required = true) }, responses = {
+					@ApiResponse(responseCode = "200", description = "Repopulated scientific names successfully"),
+					@ApiResponse(responseCode = "400", description = "Unable to repopulate") })
+	public Response repopulateScientificNames(@Context HttpServletRequest request,
+			@PathParam("documentId") String documentId) {
+		try {
+			Long docId = Long.parseLong(documentId);
+			docService.repopulateScientificNames(request, docId);
+			return Response.status(Status.OK).entity("Repopulated Successfully").build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.UPDATE + ApiConstants.NAMES)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ValidateUser
+	@Operation(summary = "Updates scientific names for all documents", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated scientific names successfully"),
+			@ApiResponse(responseCode = "400", description = "Unable to update") })
+	public Response updateBulkScientificNames(@Context HttpServletRequest request) {
+		try {
+			docService.updateAllScientificNames(request);
+			return Response.status(Status.OK).entity("Repopulated Successfully").build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
 	@Path(ApiConstants.UNFOLLOW + "/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -695,9 +734,8 @@ public class DocumentController {
 		}
 	}
 
-	@POST
+	@GET
 	@Path(ApiConstants.LIST + "/{index}/{type}")
-	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Operation(summary = "Fetch document list with filters", description = "Returns a list of documents based on various filters and pagination", parameters = {
 			@Parameter(name = "index", description = "Index to query", required = true),
@@ -714,6 +752,7 @@ public class DocumentController {
 			@Parameter(name = "isFlagged", description = "Flag filter"),
 			@Parameter(name = "user", description = "User ID filter"),
 			@Parameter(name = "sGroup", description = "Species group filter"),
+			@Parameter(name = "taxon", description = "Taxon filter"),
 			@Parameter(name = "habitatIds", description = "Habitat filter"),
 			@Parameter(name = "flags", description = "Flags filter"),
 			@Parameter(name = "featured", description = "Featured filter"),
@@ -731,8 +770,10 @@ public class DocumentController {
 			@Parameter(name = "author", description = "Author filter"),
 			@Parameter(name = "publisher", description = "Publisher filter"),
 			@Parameter(name = "title", description = "Title filter"),
+			@Parameter(name = "scientificName", description = "Scientific Name filter"),
 			@Parameter(name = "geoAggegationPrecision", description = "Precision for geo aggregation", example = "1"),
-			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false") }, requestBody = @RequestBody(required = false, content = @Content(schema = @Schema(implementation = DocumentListParams.class))), responses = {
+			@Parameter(name = "onlyFilteredAggregation", description = "Only filtered aggregation", example = "false"),
+			@Parameter(name = "location", description = "Location filter") }, responses = {
 					@ApiResponse(responseCode = "200", description = "List of documents returned", content = @Content(schema = @Schema(implementation = DocumentListData.class))),
 					@ApiResponse(responseCode = "400", description = "Error occurred during document list fetch") })
 	public Response DocumentList(@PathParam("index") String index, @PathParam("type") String type,
@@ -745,6 +786,7 @@ public class DocumentController {
 			@QueryParam("revisedOnMinDate") String revisedOnMinDate,
 			@DefaultValue("") @QueryParam("isFlagged") String isFlagged,
 			@DefaultValue("") @QueryParam("user") String user, @DefaultValue("") @QueryParam("sGroup") String sGroup,
+			@QueryParam("taxon") String taxon, @QueryParam("scientificNames") String scientificName,
 			@DefaultValue("") @QueryParam("habitatIds") String habitatIds,
 			@DefaultValue("") @QueryParam("flags") String flags,
 			@DefaultValue("") @QueryParam("featured") String featured, @QueryParam("left") Double left,
@@ -759,7 +801,12 @@ public class DocumentController {
 			@QueryParam("title") String title,
 
 			@DefaultValue("1") @QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
-			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation, DocumentListParams location) {
+			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
+			@DefaultValue("") @QueryParam("location") String location,
+
+			@QueryParam("bulkAction") String bulkAction, @QueryParam("selectAll") Boolean selectAll,
+			@QueryParam("bulkUsergroupIds") String bulkUsergroupIds,
+			@QueryParam("bulkSpeciesIds") String bulkDocumentsIds, @Context HttpServletRequest request) {
 		try {
 
 			if (max > 50) {
@@ -784,34 +831,50 @@ public class DocumentController {
 			mapSearchParams.setSortType(SortTypeEnum.DESC);
 			mapSearchParams.setMapBoundParams(mapBoundsParams);
 
-			String loc = location.getLocation();
-			if (loc != null) {
-				if (loc.contains("/")) {
-					String[] locationArray = loc.split("/");
+			if (location != null && !location.isEmpty()) {
+				if (location.contains("/")) {
+					String[] locationArray = location.split("/");
 					List<List<MapGeoPoint>> multiPolygonPoint = esUtility.multiPolygonGenerator(locationArray);
 					mapBoundsParams.setMultipolygon(multiPolygonPoint);
 				} else {
-					mapBoundsParams.setPolygon(esUtility.polygonGenerator(loc));
+					mapBoundsParams.setPolygon(esUtility.polygonGenerator(location));
 				}
 			}
 
 			MapAggregationResponse aggregationResult = null;
 
 			if (offset == 0) {
-				aggregationResult = docListService.mapAggregate(index, type, sGroup, habitatIds, tags, user, flags,
-						createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-						revisedOnMinDate, state, itemType, year, author, publisher, title, geoShapeFilterField,
-						mapSearchParams);
+				aggregationResult = docListService.mapAggregate(index, type, sGroup, taxon, scientificName, habitatIds,
+						tags, user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged,
+						revisedOnMaxDate, revisedOnMinDate, state, itemType, year, author, publisher, title,
+						geoShapeFilterField, mapSearchParams);
 			}
 
-			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, habitatIds, tags, user, flags,
-					createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged, revisedOnMaxDate,
-					revisedOnMinDate, state, itemType, year, author, publisher, title, mapSearchParams);
+			MapSearchQuery mapSearchQuery = esUtility.getMapSearchQuery(sGroup, taxon, scientificName, habitatIds, tags,
+					user, flags, createdOnMaxDate, createdOnMinDate, featured, userGroupList, isFlagged,
+					revisedOnMaxDate, revisedOnMinDate, state, itemType, year, author, publisher, title,
+					mapSearchParams);
 
-			DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,
-					geoShapeFilterField, nestedField, aggregationResult, mapSearchQuery);
+			if (view.equalsIgnoreCase("list")) {
+				DocumentListData result = docListService.getDocumentList(index, type, geoAggregationField,
+						geoShapeFilterField, nestedField, aggregationResult, mapSearchQuery);
 
-			return Response.status(Status.OK).entity(result).build();
+				return Response.status(Status.OK).entity(result).build();
+			} else if (view.equalsIgnoreCase("bulkMapping")) {
+				mapSearchParams.setFrom(0);
+				mapSearchParams.setLimit(100000);
+
+				if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
+					return Response.status(Status.BAD_REQUEST).build();
+				}
+
+				docListService.bulkAction(selectAll, bulkAction, bulkDocumentsIds, bulkUsergroupIds, mapSearchQuery,
+						index, type, request);
+
+				return Response.status(Status.OK).build();
+
+			}
+			return Response.status(Status.OK).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}

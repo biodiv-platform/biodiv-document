@@ -15,16 +15,21 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -79,6 +84,7 @@ import com.strandls.document.pojo.DocumentCreateData;
 import com.strandls.document.pojo.DocumentEditData;
 import com.strandls.document.pojo.DocumentHabitat;
 import com.strandls.document.pojo.DocumentMeta;
+import com.strandls.document.pojo.DocumentScientificName;
 import com.strandls.document.pojo.DocumentSpeciesGroup;
 import com.strandls.document.pojo.DocumentUserPermission;
 import com.strandls.document.pojo.DownloadLog;
@@ -89,11 +95,13 @@ import com.strandls.document.pojo.ShowDocument;
 import com.strandls.document.service.DocumentService;
 import com.strandls.document.util.MicroServicesUtils;
 import com.strandls.document.util.PropertyFileUtil;
+import com.strandls.document.util.ScientificNameMappingThread;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.esmodule.pojo.MapQueryResponse.ResultEnum;
 import com.strandls.esmodule.pojo.SpeciesGroup;
+import com.strandls.esmodule.pojo.TaxonomyUpdateData;
 import com.strandls.file.api.UploadApi;
 import com.strandls.file.model.FilesDTO;
 import com.strandls.geoentities.controllers.GeoentitiesServicesApi;
@@ -321,8 +329,12 @@ public class DocumentServiceImpl implements DocumentService {
 				}
 				logger.info("Retrieved {} document species groups", docSGroups.size());
 
+				List<DocSciName> docSciNames = docSciNameDao.findByDocId(documentId, null);
+				logger.info("Retrieved {} document scientific names", docSciNames.size());
+
 				List<Long> docHabitatIds = new ArrayList<Long>();
 				List<Long> docSGroupIds = new ArrayList<Long>();
+				List<DocumentScientificName> docScientificNames = new ArrayList<>();
 
 				for (DocumentHabitat docHabitat : docHabitats) {
 					docHabitatIds.add(docHabitat.getHabitatId());
@@ -334,9 +346,14 @@ public class DocumentServiceImpl implements DocumentService {
 				}
 				logger.info("Extracted {} species group IDs", docSGroupIds.size());
 
+				for (DocSciName docSciName : docSciNames) {
+					docScientificNames.add(
+							new DocumentScientificName(docSciName.getTaxonConceptId(), docSciName.getScientificName()));
+				}
+
 				logger.info("Creating ShowDocument object");
 				ShowDocument showDoc = new ShowDocument(document, userIbp, documentCoverages, userGroup, featured,
-						resource, docHabitatIds, docSGroupIds, flag, tags, documentLicense);
+						resource, docHabitatIds, docSGroupIds, docScientificNames, flag, tags, documentLicense);
 				logger.info("Successfully created ShowDocument, returning response");
 				return showDoc;
 			} else {
@@ -462,10 +479,6 @@ public class DocumentServiceImpl implements DocumentService {
 					docCoverageDao.save(docCoverage);
 				}
 			}
-			ShowDocument res = show(document.getId());
-			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-			objectMapper.setDateFormat(df);
-			String docString = objectMapper.writeValueAsString(res);
 			System.out.println("------------name finder process started-----------");
 			if (ufile != null) {
 				parsePdfWithGNFinder(ufile.getPath(), document.getId());
@@ -473,6 +486,10 @@ public class DocumentServiceImpl implements DocumentService {
 			if (documentCreateData.getExternalUrl() != null && documentCreateData.getExternalUrl().startsWith("http")) {
 				parsePdfWithGNFinder(documentCreateData.getExternalUrl(), document.getId());
 			}
+			ShowDocument res = show(document.getId());
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+			objectMapper.setDateFormat(df);
+			String docString = objectMapper.writeValueAsString(res);
 			ESUpdateThread updateThread = new ESUpdateThread(esUpdate, docString, document.getId().toString());
 			Thread thread = new Thread(updateThread);
 			thread.start();
@@ -1594,6 +1611,20 @@ public class DocumentServiceImpl implements DocumentService {
 
 	}
 
+	private boolean isUrlAccessible(String url) {
+		try {
+			HttpHead request = new HttpHead(url);
+			request.setConfig(RequestConfig.custom().setConnectTimeout(5000).setSocketTimeout(5000).build());
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+				int statusCode = response.getStatusLine().getStatusCode();
+				return statusCode >= 200 && statusCode < 400;
+			}
+		} catch (Exception e) {
+			logger.warn("URL not accessible, skipping GNFinder: {}", url);
+			return false;
+		}
+	}
+
 	@Override
 	public GNFinderResponseMap parsePdfWithGNFinder(String filePath, Long documentId) {
 
@@ -1604,6 +1635,11 @@ public class DocumentServiceImpl implements DocumentService {
 		String basePath = properties.getProperty("baseDocPath");
 		// external URL scientific name parsing
 		String completeFileUrl = filePath.startsWith("http") ? filePath : serverUrl + "/" + basePath + filePath;
+
+		if (!isUrlAccessible(completeFileUrl)) {
+			logger.warn("Skipping GNFinder — file not accessible: {}", completeFileUrl);
+			return null;
+		}
 
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http").setHost("localhost:3006").setPath("/parse").setParameter("file", completeFileUrl);
@@ -1725,6 +1761,7 @@ public class DocumentServiceImpl implements DocumentService {
 			existingName.setIsDeleted(true);
 			updatedName = docSciNameDao.update(existingName);
 			if (updatedName != null) {
+				updateDocumentLastRevised(scientifNameDetails.getDocumentId());
 				return updatedName;
 			}
 
@@ -1732,6 +1769,160 @@ public class DocumentServiceImpl implements DocumentService {
 
 		return null;
 
+	}
+
+	public void repopulateScientificNames(HttpServletRequest request, Long docId) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+		JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
+
+		Document documentDetails = documentDao.findById(docId);
+
+		Long authorId = documentDetails.getAuthorId();
+
+		if (roles.contains(ROLE_ADMIN) || userId.equals(authorId)) {
+			UFile resource = null;
+
+			if (documentDetails.getuFileId() != null) {
+				String uFileIdStr = documentDetails.getuFileId().toString();
+
+				try {
+					resource = resourceService.getUFilePath(uFileIdStr);
+				} catch (com.strandls.resource.ApiException e) {
+					logger.error("Error while fetching resource uFilePath");
+				}
+
+				if (resource != null && resource.getPath() != null) {
+					resource.setPath(resource.getPath().replace("/documents", ""));
+				}
+			}
+
+			// Process the scientific names extraction safely
+			updateScienticNames(documentDetails.getId(), resource, documentDetails.getExternalUrl());
+			updateDocumentLastRevised(documentDetails.getId());
+		}
+	}
+
+	public void updateAllScientificNames(HttpServletRequest request) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		JSONArray roles = (JSONArray) profile.getAttribute(ROLES);
+
+		if (roles.contains(ROLE_ADMIN)) {
+			ScientificNameMappingThread mappingThread = new ScientificNameMappingThread(esUpdate, docSciNameDao,
+					esService);
+			Thread thread = new Thread(mappingThread);
+			thread.start();
+		}
+	}
+
+	public void updateScienticNames(Long documentId, UFile ufile, String externalUrl) {
+
+		logger.info("Recalculationg for documentId {}", documentId);
+
+		docSciNameDao.deleteByDocumentId(documentId);
+
+		if (ufile != null) {
+			System.out.println("------------name finder process started-----------");
+			parsePdfWithGNFinder(ufile.getPath(), documentId);
+		} else if (externalUrl != null && externalUrl.startsWith("http")) {
+			System.out.println("------------name finder process started-----------");
+			parsePdfWithGNFinder(externalUrl, documentId);
+		}
+
+	}
+
+	public void handleTaxonByName(TaxonomyUpdateData updateData) {
+		if (updateData == null)
+			return;
+
+		// 1. Accumulate all unique Taxon IDs that need processing across all scenarios
+		Set<Long> taxonIdsToProcess = new HashSet<>();
+		String canonicalName = null;
+
+		if (updateData.getBulkIds() != null) {
+			taxonIdsToProcess.addAll(updateData.getBulkIds());
+		}
+
+		if (updateData.getDeleteRecoIds() != null) {
+			taxonIdsToProcess.addAll(updateData.getDeleteRecoIds());
+		}
+
+		if (!Objects.equals(updateData.getOldName(), updateData.getName()) && updateData.getTargetId() != null) {
+			taxonIdsToProcess.add(updateData.getTargetId());
+			canonicalName = updateData.getCanonicalForm();
+		}
+
+		// 2. Early exit if there is absolutely nothing to process
+		if (taxonIdsToProcess.isEmpty()) {
+			return;
+		}
+
+		// 3. Delegate to a single, optimized processing pipeline
+		List<Long> documentIds = new ArrayList<>();
+		if (canonicalName == null) {
+			documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(new ArrayList<>(taxonIdsToProcess));
+		}
+		docSciNameDao.unlinkTaxonIds(new ArrayList<>(taxonIdsToProcess));
+		if (canonicalName != null) {
+			docSciNameDao.linkTaxonIds(updateData.getTargetId(), canonicalName);
+			documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(List.of(updateData.getTargetId()));
+		}
+		String csv = documentIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+		esUpdate.esBulkScientificNamesUpdate(csv);
+	}
+
+	private void processDocumentsForTaxonIds(Set<Long> taxonIds) {
+		try {
+			// Fetch all associated document IDs in one single database call
+			List<Long> documentIds = docSciNameDao.getDocumentIdsByTaxonConceptIds(new ArrayList<>(taxonIds));
+			if (documentIds == null || documentIds.isEmpty()) {
+				logger.info("No documents found for the requested taxon updates.");
+				return;
+			}
+
+			// Fetch all Document objects in bulk
+			List<Document> documents = documentDao.findByBulkIds(documentIds);
+
+			// Local Cache Map to avoid hitting the resource API repeatedly for duplicate
+			// uFileIds
+			Map<String, UFile> uFileCache = new HashMap<>();
+
+			for (Document doc : documents) {
+				try {
+					UFile resource = null;
+
+					if (doc.getuFileId() != null) {
+						String uFileIdStr = doc.getuFileId().toString();
+
+						// Look up in the local cache first before making an API call
+						if (uFileCache.containsKey(uFileIdStr)) {
+							resource = uFileCache.get(uFileIdStr);
+						} else {
+							logger.debug("Fetching resource from service for uFileId: {}", uFileIdStr);
+							resource = resourceService.getUFilePath(uFileIdStr);
+
+							if (resource != null && resource.getPath() != null) {
+								resource.setPath(resource.getPath().replace("/documents", ""));
+							}
+							// Save to local cache (even if null, to avoid repeating a failing/empty
+							// request)
+							uFileCache.put(uFileIdStr, resource);
+						}
+					}
+
+					// Process the scientific names extraction safely
+					updateScienticNames(doc.getId(), resource, doc.getExternalUrl());
+
+				} catch (com.strandls.resource.ApiException e) {
+					logger.error("API error fetching resource for documentId: {} (uFileId: {}). Skipping.", doc.getId(),
+							doc.getuFileId(), e);
+				} catch (Exception e) {
+					logger.error("Unexpected error processing documentId: {}. Skipping.", doc.getId(), e);
+				}
+			}
+		} catch (Exception e) {
+			logger.error("Critical error while batch processing taxonomy documents", e);
+		}
 	}
 
 }
