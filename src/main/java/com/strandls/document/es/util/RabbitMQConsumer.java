@@ -25,6 +25,8 @@ import jakarta.inject.Inject;
  */
 public class RabbitMQConsumer {
 
+	private static final String SERVICE_NAME = "biodiv-document";
+
 	private final Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
 
 	private final static String DOCUMENT_QUEUE = "documentQueue";
@@ -69,9 +71,9 @@ public class RabbitMQConsumer {
 					try {
 						elasticUpdate();
 						listenToTaxonomyEvents();
-						logger.info("Re-subscribed RabbitMQ consumers after connection recovery");
+						logger.info("[{}] Re-subscribed RabbitMQ consumers after connection recovery", SERVICE_NAME);
 					} catch (Exception e) {
-						logger.error("Failed to re-subscribe RabbitMQ consumers after recovery", e);
+						logger.error("[{}] Failed to re-subscribe RabbitMQ consumers after recovery", SERVICE_NAME, e);
 					}
 				}
 
