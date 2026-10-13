@@ -106,8 +106,6 @@ import com.strandls.file.api.UploadApi;
 import com.strandls.file.model.FilesDTO;
 import com.strandls.geoentities.controllers.GeoentitiesServicesApi;
 import com.strandls.geoentities.pojo.GeoentitiesWKTData;
-import com.strandls.landscape.controller.LandscapeApi;
-import com.strandls.landscape.pojo.Landscape;
 import com.strandls.resource.controllers.ResourceServicesApi;
 import com.strandls.resource.pojo.License;
 import com.strandls.resource.pojo.UFile;
@@ -217,9 +215,6 @@ public class DocumentServiceImpl implements DocumentService {
 	private LogActivities logActivity;
 
 	@Inject
-	private LandscapeApi landScapeService;
-
-	@Inject
 	private DocSciNameDao docSciNameDao;
 
 	@Inject
@@ -258,24 +253,24 @@ public class DocumentServiceImpl implements DocumentService {
 				}
 				logger.info("Retrieved {} document coverages", documentCoverages.size());
 
-				List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
-				if (allLandscape == null) {
-					allLandscape = new ArrayList<>();
-				}
-				logger.info("Retrieved {} landscapes", allLandscape.size());
-
-				for (DocumentCoverage docCoverage : documentCoverages) {
-					if (docCoverage.getGeoEntityId() != null) {
-						for (Landscape landscape : allLandscape) {
-							if (landscape.getGeoEntityId().equals(docCoverage.getGeoEntityId())) {
-								docCoverage.setLandscapeIds(landscape.getId());
-								break;
-							}
-						}
-
-					}
-				}
-				logger.info("Completed landscape mapping for coverages");
+//				List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
+//				if (allLandscape == null) {
+//					allLandscape = new ArrayList<>();
+//				}
+//				logger.info("Retrieved {} landscapes", allLandscape.size());
+//
+//				for (DocumentCoverage docCoverage : documentCoverages) {
+//					if (docCoverage.getGeoEntityId() != null) {
+//						for (Landscape landscape : allLandscape) {
+//							if (landscape.getGeoEntityId().equals(docCoverage.getGeoEntityId())) {
+//								docCoverage.setLandscapeIds(landscape.getId());
+//								break;
+//							}
+//						}
+//
+//					}
+//				}
+//				logger.info("Completed landscape mapping for coverages");
 
 				List<UserGroupIbp> userGroup = ugService.getUserGroupByDocId(documentId.toString());
 				if (userGroup == null) {
@@ -829,17 +824,17 @@ public class DocumentServiceImpl implements DocumentService {
 			dataSheetIterator.next();
 
 //			EXTRACT SITE NUMBER TO GEOENTITY MAPPING
-			List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
-			Map<Long, Long> siteGeoentitiyMapping = new HashMap<Long, Long>();
-			for (Landscape landScape : allLandscape) {
-				siteGeoentitiyMapping.put(landScape.getSiteNumber(), landScape.getGeoEntityId());
-			}
+//			List<Landscape> allLandscape = landScapeService.getAllLandScapes(defaultLanguageId, -1, -1);
+//			Map<Long, Long> siteGeoentitiyMapping = new HashMap<Long, Long>();
+//			for (Landscape landScape : allLandscape) {
+//				siteGeoentitiyMapping.put(landScape.getSiteNumber(), landScape.getGeoEntityId());
+//			}
 
 //			EXTRACT CITED NAME TO GEOENTITY MAPPING
-			Map<String, Long> citedNameGeoEntityMapping = new HashMap<String, Long>();
-			for (Landscape landscape : allLandscape) {
-				citedNameGeoEntityMapping.put(landscape.getShortName().toLowerCase(), landscape.getGeoEntityId());
-			}
+//			Map<String, Long> citedNameGeoEntityMapping = new HashMap<String, Long>();
+//			for (Landscape landscape : allLandscape) {
+//				citedNameGeoEntityMapping.put(landscape.getShortName().toLowerCase(), landscape.getGeoEntityId());
+//			}
 
 //			get all speciesGroup
 			List<SpeciesGroup> speciesGroupList = new ArrayList<>();
@@ -929,70 +924,70 @@ public class DocumentServiceImpl implements DocumentService {
 						document.getId(), "Document", null, "Document created", generateMailData(document.getId()));
 
 //				CITED NAME
-				if (fieldMapping.get("citedName") != null) {
-					String citedNames = null;
-					Cell cell = dataRow.getCell(fieldMapping.get("citedName"), MissingCellPolicy.RETURN_BLANK_AS_NULL);
-					if (cell != null) {
-						cell.setCellType(CellType.STRING);
-						citedNames = cell.getStringCellValue();
-					}
-					if (citedNames != null) {
-						String citedNameArray[] = citedNames.split(",");
-						for (String citedName : citedNameArray) {
-							citedName = citedName.toLowerCase();
-							if (citedNameGeoEntityMapping.containsKey(citedName)) {
-								GeoentitiesWKTData geoEntity = geoEntitiesServices
-										.findGeoentitiesById(citedNameGeoEntityMapping.get(citedName).toString());
-								if (geoEntity != null) {
-									saveDocCoverage(document.getId(), citedNameGeoEntityMapping.get(citedName),
-											geoEntity);
-								}
-							}
-						}
-					}
-				}
+//				if (fieldMapping.get("citedName") != null) {
+//					String citedNames = null;
+//					Cell cell = dataRow.getCell(fieldMapping.get("citedName"), MissingCellPolicy.RETURN_BLANK_AS_NULL);
+//					if (cell != null) {
+//						cell.setCellType(CellType.STRING);
+//						citedNames = cell.getStringCellValue();
+//					}
+//					if (citedNames != null) {
+//						String citedNameArray[] = citedNames.split(",");
+//						for (String citedName : citedNameArray) {
+//							citedName = citedName.toLowerCase();
+//							if (citedNameGeoEntityMapping.containsKey(citedName)) {
+//								GeoentitiesWKTData geoEntity = geoEntitiesServices
+//										.findGeoentitiesById(citedNameGeoEntityMapping.get(citedName).toString());
+//								if (geoEntity != null) {
+//									saveDocCoverage(document.getId(), citedNameGeoEntityMapping.get(citedName),
+//											geoEntity);
+//								}
+//							}
+//						}
+//					}
+//				}
 
 //				PROTECTED CITED AREAS
-				if (fieldMapping.get("siteNumber") != null) {
-
-					String siteNumber = null;
-					Cell cell = dataRow.getCell(fieldMapping.get("siteNumber"), MissingCellPolicy.RETURN_BLANK_AS_NULL);
-					if (cell != null) {
-						cell.setCellType(CellType.STRING);
-						siteNumber = cell.getStringCellValue();
-					}
-					if (siteNumber != null) {
-						String siteNumberArray[] = siteNumber.split(",");
-
-						for (String siteNumberString : siteNumberArray) {
-
-							for (String site : siteNumberString.split(" ")) {
-
-								site = site.toLowerCase();
-								site = site.replace("site", "");
-								if (!site.trim().isEmpty()) {
-									try {
-										Long siteLong = Long.parseLong(site.trim());
-
-										if (siteGeoentitiyMapping.containsKey(siteLong)) {
-											GeoentitiesWKTData geoEntity = geoEntitiesServices.findGeoentitiesById(
-													siteGeoentitiyMapping.get(siteLong).toString());
-											if (geoEntity != null) {
-												saveDocCoverage(document.getId(), siteGeoentitiyMapping.get(siteLong),
-														geoEntity);
-											}
-										}
-									} catch (Exception e) {
-										logger.error(e.getMessage());
-									}
-
-								}
-
-							}
-
-						}
-					}
-				}
+//				if (fieldMapping.get("siteNumber") != null) {
+//
+//					String siteNumber = null;
+//					Cell cell = dataRow.getCell(fieldMapping.get("siteNumber"), MissingCellPolicy.RETURN_BLANK_AS_NULL);
+//					if (cell != null) {
+//						cell.setCellType(CellType.STRING);
+//						siteNumber = cell.getStringCellValue();
+//					}
+//					if (siteNumber != null) {
+//						String siteNumberArray[] = siteNumber.split(",");
+//
+//						for (String siteNumberString : siteNumberArray) {
+//
+//							for (String site : siteNumberString.split(" ")) {
+//
+//								site = site.toLowerCase();
+//								site = site.replace("site", "");
+//								if (!site.trim().isEmpty()) {
+//									try {
+//										Long siteLong = Long.parseLong(site.trim());
+//
+//										if (siteGeoentitiyMapping.containsKey(siteLong)) {
+//											GeoentitiesWKTData geoEntity = geoEntitiesServices.findGeoentitiesById(
+//													siteGeoentitiyMapping.get(siteLong).toString());
+//											if (geoEntity != null) {
+//												saveDocCoverage(document.getId(), siteGeoentitiyMapping.get(siteLong),
+//														geoEntity);
+//											}
+//										}
+//									} catch (Exception e) {
+//										logger.error(e.getMessage());
+//									}
+//
+//								}
+//
+//							}
+//
+//						}
+//					}
+//				}
 
 //				GEO ENTITY
 				if (fieldMapping.get("geoentities") != null) {
